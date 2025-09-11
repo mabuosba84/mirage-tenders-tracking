@@ -2,11 +2,6 @@
 const nextConfig = {
   // App Router is enabled by default in Next.js 13+
   
-  // Production optimizations
-  experimental: {
-    optimizeCss: true,
-  },
-  
   // Image optimization
   images: {
     domains: ['localhost'],
