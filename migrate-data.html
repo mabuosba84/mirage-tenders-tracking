@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Migration Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .danger {
+            background-color: #dc3545;
+        }
+        .danger:hover {
+            background-color: #c82333;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mirage Tenders - Data Migration Tool</h1>
+        <p>Use this tool to transfer your tender data between different ports (localhost:3001 to localhost:3000)</p>
+        
+        <div class="step">
+            <h3>Step 1: Export Data from localhost:3001</h3>
+            <p>1. Open <a href="http://localhost:3001" target="_blank" rel="noopener">http://localhost:3001</a> in a new tab</p>
+            <p>2. Open Browser Developer Tools (F12)</p>
+            <p>3. Go to Console tab</p>
+            <p>4. Copy and paste this code:</p>
+            <textarea readonly title="Export code" aria-label="Code to export data">
+// Export all tender data from localStorage
+const exportData = () =&gt; {
+    const data = {
+        tenders: localStorage.getItem('tenders'),
+        users: localStorage.getItem('users'),
+        currentUser: localStorage.getItem('currentUser'),
+        companyLogo: localStorage.getItem('companyLogo')
+    };
+    console.log('=== COPY THE DATA BELOW ===');
+    console.log(JSON.stringify(data, null, 2));
+    console.log('=== END OF DATA ===');
+    return data;
+};
+exportData();
+            </textarea>
+            <p>5. Copy the JSON data that appears in the console</p>
+        </div>
+
+        <div class="step">
+            <h3>Step 2: Import Data to localhost:3000</h3>
+            <p>Paste the copied JSON data here and click Import:</p>
+            <textarea id="importData" placeholder="Paste your exported JSON data here..."></textarea>
+            <br>
+            <button onclick="importData()">Import Data</button>
+            <div id="importResult"></div>
+        </div>
+
+        <div class="step">
+            <h3>Step 3: Current Data on localhost:3000</h3>
+            <button onclick="showCurrentData()">Show Current Data</button>
+            <button onclick="clearAllData()" class="danger">Clear All Data</button>
+            <div id="currentData"></div>
+        </div>
+    </div>
+
+    <script>
+        function importData() {
+            try {
+                const jsonData = document.getElementById('importData').value;
+                if (!jsonData.trim()) {
+                    document.getElementById('importResult').innerHTML = '<span class="error">Please paste the JSON data first</span>';
+                    return;
+                }
+
+                const data = JSON.parse(jsonData);
+                
+                // Import each piece of data if it exists
+                if (data.tenders) localStorage.setItem('tenders', data.tenders);
+                if (data.users) localStorage.setItem('users', data.users);
+                if (data.currentUser) localStorage.setItem('currentUser', data.currentUser);
+                if (data.companyLogo) localStorage.setItem('companyLogo', data.companyLogo);
+
+                document.getElementById('importResult').innerHTML = '<span class="success">Data imported successfully! Refresh your main application.</span>';
+                
+                // Show what was imported
+                setTimeout(() => {
+                    showCurrentData();
+                }, 1000);
+
+            } catch (error) {
+                document.getElementById('importResult').innerHTML = '<span class="error">Error importing data: ' + error.message + '</span>';
+            }
+        }
+
+        function showCurrentData() {
+            const tenders = localStorage.getItem('tenders');
+            const users = localStorage.getItem('users');
+            const currentUser = localStorage.getItem('currentUser');
+            const companyLogo = localStorage.getItem('companyLogo');
+
+            let html = '<h4>Current localStorage Data:</h4>';
+            html += '<p><strong>Tenders:</strong> ' + (tenders ? JSON.parse(tenders).length + ' tenders found' : 'No tenders') + '</p>';
+            html += '<p><strong>Users:</strong> ' + (users ? JSON.parse(users).length + ' users found' : 'No users') + '</p>';
+            html += '<p><strong>Current User:</strong> ' + (currentUser ? JSON.parse(currentUser).name : 'Not logged in') + '</p>';
+            html += '<p><strong>Company Logo:</strong> ' + (companyLogo ? 'Logo uploaded' : 'No logo') + '</p>';
+
+            document.getElementById('currentData').innerHTML = html;
+        }
+
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone!')) {
+                localStorage.clear();
+                document.getElementById('currentData').innerHTML = '<span class="success">All data cleared</span>';
+            }
+        }
+
+        // Show current data on page load
+        showCurrentData();
+    </script>
+</body>
+</html>
