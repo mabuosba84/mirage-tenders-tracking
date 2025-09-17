@@ -1,6 +1,8 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 
-let storage = {
+// Global storage for this serverless function instance
+// Note: This will reset on cold starts, but that's expected for serverless
+const globalStorage = {
   tenders: [],
   users: [
     {
@@ -11,7 +13,7 @@ let storage = {
       name: 'System Administrator',
       email: 'admin@miragebs.com',
       isActive: true,
-      createdAt: new Date().toISOString(),
+      createdAt: '2024-01-01T00:00:00.000Z',
       lastLogin: null
     },
     {
@@ -22,78 +24,100 @@ let storage = {
       name: 'Regular User',
       email: 'user@miragebs.com',
       isActive: true,
-      createdAt: new Date().toISOString(),
+      createdAt: '2024-01-01T00:00:00.000Z',
       lastLogin: null
     }
   ],
   files: [],
   settings: {
     companyName: 'Mirage Business Solutions',
-    lastUpdated: new Date().toISOString()
+    lastUpdated: '2024-01-01T00:00:00.000Z'
   },
-  lastUpdated: new Date().toISOString()
+  lastUpdated: '2024-01-01T00:00:00.000Z'
 };
 
 export async function GET() {
+  console.log('GET /api/sync - Starting');
+  
   try {
-    console.log('Sync GET: Returning data');
-    return NextResponse.json(storage);
+    const response = {
+      ...globalStorage,
+      requestTime: new Date().toISOString(),
+      message: 'Data retrieved successfully'
+    };
+    
+    console.log('GET /api/sync - Success:', response.tenders.length, 'tenders');
+    return NextResponse.json(response, { status: 200 });
+    
   } catch (error) {
-    console.error('Sync GET error:', error);
+    console.error('GET /api/sync - Error:', error);
     return NextResponse.json({ 
-      error: 'Failed to get data',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'GET failed',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
+  console.log('POST /api/sync - Starting');
+  
   try {
-    console.log('Sync POST: Starting');
-    
-    // Check if request has body
-    if (!request.body) {
-      console.log('Sync POST: No body provided');
-      return NextResponse.json({ error: 'No data provided' }, { status: 400 });
+    // Parse request body
+    let requestData;
+    try {
+      requestData = await request.json();
+      console.log('POST /api/sync - Received data keys:', Object.keys(requestData || {}));
+    } catch (parseError) {
+      console.error('POST /api/sync - JSON parse error:', parseError);
+      return NextResponse.json({ 
+        error: 'Invalid JSON',
+        message: 'Request body is not valid JSON',
+        timestamp: new Date().toISOString()
+      }, { status: 400 });
+    }
+
+    // Update storage with received data
+    if (requestData) {
+      if (Array.isArray(requestData.tenders)) {
+        globalStorage.tenders = requestData.tenders;
+        console.log('POST /api/sync - Updated tenders:', globalStorage.tenders.length);
+      }
+      
+      if (Array.isArray(requestData.users)) {
+        globalStorage.users = requestData.users;
+        console.log('POST /api/sync - Updated users:', globalStorage.users.length);
+      }
+      
+      if (Array.isArray(requestData.files)) {
+        globalStorage.files = requestData.files;
+        console.log('POST /api/sync - Updated files:', globalStorage.files.length);
+      }
+      
+      if (requestData.settings && typeof requestData.settings === 'object') {
+        globalStorage.settings = { ...globalStorage.settings, ...requestData.settings };
+        console.log('POST /api/sync - Updated settings');
+      }
     }
     
-    const data = await request.json();
-    console.log('Sync POST: Received data', Object.keys(data));
-    
-    if (data.tenders !== undefined) {
-      storage.tenders = Array.isArray(data.tenders) ? data.tenders : [];
-      console.log('Sync POST: Updated tenders, count:', storage.tenders.length);
-    }
-    if (data.users !== undefined) {
-      storage.users = Array.isArray(data.users) ? data.users : [];
-      console.log('Sync POST: Updated users, count:', storage.users.length);
-    }
-    if (data.files !== undefined) {
-      storage.files = Array.isArray(data.files) ? data.files : [];
-      console.log('Sync POST: Updated files, count:', storage.files.length);
-    }
-    if (data.settings !== undefined) {
-      storage.settings = { ...storage.settings, ...data.settings };
-      console.log('Sync POST: Updated settings');
-    }
-    
-    storage.lastUpdated = new Date().toISOString();
+    globalStorage.lastUpdated = new Date().toISOString();
     
     const response = {
       success: true,
       message: 'Data saved successfully',
-      count: storage.tenders.length,
-      timestamp: storage.lastUpdated
+      count: globalStorage.tenders.length,
+      timestamp: globalStorage.lastUpdated
     };
     
-    console.log('Sync POST: Success', response);
-    return NextResponse.json(response);
+    console.log('POST /api/sync - Success:', response);
+    return NextResponse.json(response, { status: 200 });
     
   } catch (error) {
-    console.error('Sync POST error:', error);
+    console.error('POST /api/sync - Error:', error);
     return NextResponse.json({ 
-      error: 'Failed to save data',
-      details: error instanceof Error ? error.message : 'Unknown error'
+      error: 'POST failed',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
     }, { status: 500 });
   }
 }
