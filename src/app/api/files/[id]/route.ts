@@ -19,30 +19,52 @@ export async function GET(
     if (!fileData) {
       console.log('File not found in memory storage:', fileId);
       
-      // Return a placeholder image/document for demo purposes
+      // Return a clean placeholder for missing files
       const placeholderContent = `
         <!DOCTYPE html>
         <html>
           <head>
-            <title>File: ${fileId}</title>
+            <meta charset="UTF-8">
+            <title>Document</title>
             <style>
-              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f8f9fa; }
-              .placeholder { background: white; padding: 60px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-              .file-icon { font-size: 64px; margin-bottom: 20px; }
-              h2 { color: #343a40; margin-bottom: 10px; }
-              p { color: #6c757d; margin: 10px 0; }
-              .download-btn { background: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; margin-top: 20px; display: inline-block; }
-              .download-btn:hover { background: #0056b3; }
+              * { margin: 0; padding: 0; box-sizing: border-box; }
+              html, body { height: 100%; }
+              body { 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #f8f9fa;
+                color: #495057;
+              }
+              .placeholder { 
+                text-align: center;
+                padding: 40px;
+                background: white;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                max-width: 400px;
+              }
+              .icon { font-size: 64px; margin-bottom: 20px; opacity: 0.6; }
+              h2 { margin-bottom: 8px; font-weight: 500; }
+              p { margin: 8px 0; opacity: 0.8; }
+              .file-id { 
+                font-family: monospace; 
+                background: #f8f9fa; 
+                padding: 4px 8px; 
+                border-radius: 4px; 
+                font-size: 12px;
+                margin: 16px 0;
+              }
             </style>
           </head>
           <body>
             <div class="placeholder">
-              <div class="file-icon">📎</div>
-              <h2>File: ${fileId}</h2>
-              <p>This is a placeholder for the uploaded file.</p>
-              <p><strong>Note:</strong> In Vercel's serverless environment, uploaded files are stored temporarily.</p>
-              <p>File ID: <code>${fileId}</code></p>
-              <a href="#" class="download-btn" onclick="alert('File download would start here in a production environment')">Download Original File</a>
+              <div class="icon">�</div>
+              <h2>Document</h2>
+              <p>File not found in current session</p>
+              <div class="file-id">${fileId}</div>
+              <p><small>Files are stored temporarily in serverless environment</small></p>
             </div>
           </body>
         </html>
