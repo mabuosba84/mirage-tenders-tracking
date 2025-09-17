@@ -46,3 +46,4 @@ out/
 
 # Local development
 .cache/
+.vercel
