@@ -1,7 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
+import fs from 'fs'
+import path from 'path'
 
 // In-memory file storage for Vercel serverless
 const fileStorage = new Map<string, { data: Buffer; meta: any }>();
+
+// Local file storage for production builds
+const getLocalStoragePath = () => {
+  return path.join(process.cwd(), 'uploads');
+};
+
+const ensureUploadsDir = () => {
+  const uploadsDir = getLocalStoragePath();
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+  return uploadsDir;
+};
+
+const isLocalEnvironment = () => {
+  return process.env.NODE_ENV === 'production' && !process.env.VERCEL;
+};
 
 export async function GET(
   request: NextRequest,
@@ -13,11 +32,35 @@ export async function GET(
     
     console.log('GET file request for:', fileId);
     
-    // Check if file exists in memory storage
-    const fileData = fileStorage.get(fileId);
+    let fileData;
+    let fileMeta;
+    
+    // Try local file system first (for local production)
+    if (isLocalEnvironment()) {
+      try {
+        const uploadsDir = getLocalStoragePath();
+        const filePath = path.join(uploadsDir, fileId);
+        const metaPath = path.join(uploadsDir, `${fileId}.meta`);
+        
+        if (fs.existsSync(filePath) && fs.existsSync(metaPath)) {
+          const fileBuffer = fs.readFileSync(filePath);
+          const metaContent = fs.readFileSync(metaPath, 'utf-8');
+          fileMeta = JSON.parse(metaContent);
+          fileData = { data: fileBuffer, meta: fileMeta };
+          console.log('File found in local storage:', fileId);
+        }
+      } catch (error) {
+        console.error('Error reading from local storage:', error);
+      }
+    }
+    
+    // Fallback to memory storage (for Vercel)
+    if (!fileData) {
+      fileData = fileStorage.get(fileId);
+    }
     
     if (!fileData) {
-      console.log('File not found in memory storage:', fileId);
+      console.log('File not found in any storage:', fileId);
       
       // Return a clean placeholder for missing files
       const placeholderContent = `
@@ -125,23 +168,40 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
-    
+
     const fileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Store in memory
+    const fileMetadata = {
+      filename: file.name,
+      mimetype: file.type,
+      size: file.size,
+      uploadedAt: new Date().toISOString()
+    };
+
+    // Store in local file system if in local production
+    if (isLocalEnvironment()) {
+      try {
+        const uploadsDir = ensureUploadsDir();
+        const filePath = path.join(uploadsDir, fileId);
+        const metaPath = path.join(uploadsDir, `${fileId}.meta`);
+        
+        fs.writeFileSync(filePath, buffer);
+        fs.writeFileSync(metaPath, JSON.stringify(fileMetadata, null, 2));
+        
+        console.log('File saved to local storage:', fileId);
+      } catch (error) {
+        console.error('Error saving to local storage:', error);
+      }
+    }
+    
+    // Also store in memory (for fallback)
     fileStorage.set(fileId, {
       data: buffer,
-      meta: {
-        filename: file.name,
-        mimetype: file.type,
-        size: file.size
-      }
+      meta: fileMetadata
     });
-    
-    console.log('File stored with ID:', fileId);
-    
-    return NextResponse.json({ 
+
+    console.log('File stored with ID:', fileId);    return NextResponse.json({ 
       fileId, 
       filename: file.name, 
       size: file.size 
