@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     // For Vercel deployment, we'll return a simple viewer
     // Since file system access is limited, we'll redirect to the download route
     const baseUrl = request.nextUrl.origin;
