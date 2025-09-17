@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Tender, TenderFormData, FormErrors, TenderItem, TenderAttachment } from '@/types'
 import { Save, X, Calculator, Clock, Plus, Trash2, Upload, FileText, AlertTriangle, Shield } from 'lucide-react'
-import { calculateResponseTime, formatResponseTime, getResponseTimeStatus, formatNumberWithCommas } from '@/utils/dateCalculations'
+import { calculateResponseTime, formatResponseTime, getResponseTimeStatus, formatNumberWithCommas, formatPercentage } from '@/utils/dateCalculations'
 import FormattedNumberInput from './FormattedNumberInput'
 
 interface TenderFormProps {
@@ -28,7 +28,6 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         sellingPrice: tender.sellingPrice?.toString() || '',
         tenderStatus: tender.tenderStatus,
         competitorWinningPrice: tender.competitorWinningPrice || '',
-        bidBondIssueDate: tender.bidBondIssueDate ? tender.bidBondIssueDate.toISOString().split('T')[0] : '',
         bankGuaranteeIssueDate: tender.bankGuaranteeIssueDate ? tender.bankGuaranteeIssueDate.toISOString().split('T')[0] : '',
         bankGuaranteeExpiryDate: tender.bankGuaranteeExpiryDate ? tender.bankGuaranteeExpiryDate.toISOString().split('T')[0] : '',
         opg: tender.opg || '',
@@ -48,7 +47,6 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       sellingPrice: '',
       tenderStatus: 'Under review',
       competitorWinningPrice: '',
-      bidBondIssueDate: '',
       bankGuaranteeIssueDate: '',
       bankGuaranteeExpiryDate: '',
       opg: '',
@@ -108,18 +106,66 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   }
 
   // Helper function to handle file upload
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'tender_document' | 'bank_guarantee' | 'proposal_offer') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'tender_document' | 'bank_guarantee' | 'proposal_offer') => {
     const file = e.target.files?.[0]
     if (file) {
-      const newAttachment: TenderAttachment = {
-        id: Date.now().toString(),
-        name: file.name,
-        type: type,
-        url: URL.createObjectURL(file),
-        uploadedBy: user.username,
-        uploadedAt: new Date()
+      try {
+        // Create FormData for file upload
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', type)
+        formData.append('tenderId', tender?.id || 'new')
+        
+        // Upload to server
+        const response = await fetch('/api/files/upload', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (response.ok) {
+          const uploadResult = await response.json()
+          
+          const newAttachment: TenderAttachment = {
+            id: uploadResult.id,
+            name: uploadResult.name,
+            type: type,
+            url: uploadResult.url, // Server-side URL instead of blob URL
+            uploadedBy: user.username,
+            uploadedAt: new Date(),
+            crossDomainCompatible: true // Mark as cross-domain compatible
+          }
+          setAttachments(prev => [...prev, newAttachment])
+          
+          // Show success message
+          console.log('File uploaded successfully:', uploadResult.name)
+        } else {
+          // Fallback to blob URL if server upload fails
+          console.warn('Server upload failed, using blob URL fallback')
+          const newAttachment: TenderAttachment = {
+            id: Date.now().toString(),
+            name: file.name,
+            type: type,
+            url: URL.createObjectURL(file),
+            uploadedBy: user.username,
+            uploadedAt: new Date(),
+            crossDomainCompatible: false // Mark as domain-specific
+          }
+          setAttachments(prev => [...prev, newAttachment])
+        }
+      } catch (error) {
+        console.error('File upload error:', error)
+        // Fallback to blob URL
+        const newAttachment: TenderAttachment = {
+          id: Date.now().toString(),
+          name: file.name,
+          type: type,
+          url: URL.createObjectURL(file),
+          uploadedBy: user.username,
+          uploadedAt: new Date(),
+          crossDomainCompatible: false // Mark as domain-specific
+        }
+        setAttachments(prev => [...prev, newAttachment])
       }
-      setAttachments(prev => [...prev, newAttachment])
     }
   }
 
@@ -142,9 +188,9 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
     const selling = parseFloat(formData.sellingPrice)
     
     if (cost && selling && selling > 0) {
-      return ((selling - cost) / selling * 100).toFixed(1)
+      return formatPercentage(((selling - cost) / selling * 100))
     }
-    return '0'
+    return '0.00'
   }
 
   const getCurrentResponseTime = () => {
@@ -212,7 +258,6 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         profitMargin: formData.costFromHP && formData.sellingPrice ? parseFloat(calculateProfitMargin()) : null,
         tenderStatus: formData.tenderStatus,
         competitorWinningPrice: formData.competitorWinningPrice || null,
-        bidBondIssueDate: formData.bidBondIssueDate ? new Date(formData.bidBondIssueDate) : null,
         bankGuaranteeIssueDate: formData.bankGuaranteeIssueDate ? new Date(formData.bankGuaranteeIssueDate) : null,
         bankGuaranteeExpiryDate: formData.bankGuaranteeExpiryDate ? new Date(formData.bankGuaranteeExpiryDate) : null,
         opg: formData.opg || '',
@@ -984,23 +1029,6 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter competitor name or price"
-              />
-            </div>
-          </div>
-
-          {/* Bid Bond Date */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="bidBondIssueDate" className="block text-sm font-medium text-gray-700 mb-2">
-                Bid Bond Issue Date
-              </label>
-              <input
-                type="date"
-                id="bidBondIssueDate"
-                name="bidBondIssueDate"
-                value={formData.bidBondIssueDate}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
           </div>

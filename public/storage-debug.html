@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Storage Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+        .button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .button:hover { background: #0056b3; }
+        .output { background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 3px; white-space: pre-wrap; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+    </style>
+</head>
+<body>
+    <h1>Storage Debug Tool</h1>
+    
+    <div class="section">
+        <h2>1. LocalStorage Check</h2>
+        <button class="button" onclick="checkLocalStorage()">Check LocalStorage</button>
+        <div id="localStorage-output" class="output"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. IndexedDB Test</h2>
+        <button class="button" onclick="testIndexedDB()">Test IndexedDB Connection</button>
+        <button class="button" onclick="saveTestData()">Save Test Data to IndexedDB</button>
+        <button class="button" onclick="loadFromIndexedDB()">Load from IndexedDB</button>
+        <div id="indexedDB-output" class="output"></div>
+    </div>
+    
+    <div class="section">
+        <h2>3. Force Migration</h2>
+        <button class="button" onclick="forceMigration()">Force Migration from LocalStorage to IndexedDB</button>
+        <div id="migration-output" class="output"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'output error' : type === 'success' ? 'output success' : 'output';
+            element.className = className;
+            element.textContent = `[${timestamp}] ${message}`;
+        }
+
+        function checkLocalStorage() {
+            try {
+                const tenders = localStorage.getItem('mirage_tenders');
+                const users = localStorage.getItem('mirage_users');
+                
+                let output = '';
+                if (tenders) {
+                    const parsedTenders = JSON.parse(tenders);
+                    output += `Tenders found: ${parsedTenders.length} items\n`;
+                    if (parsedTenders.length > 0) {
+                        output += `Sample tender: ${parsedTenders[0].customerName || 'No customer name'}\n`;
+                        output += `Sample tender ID: ${parsedTenders[0].id}\n`;
+                    }
+                } else {
+                    output += 'No tenders found in localStorage\n';
+                }
+                
+                if (users) {
+                    const parsedUsers = JSON.parse(users);
+                    output += `Users found: ${parsedUsers.length} items\n`;
+                } else {
+                    output += 'No users found in localStorage\n';
+                }
+                
+                log('localStorage-output', output, 'success');
+            } catch (error) {
+                log('localStorage-output', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testIndexedDB() {
+            try {
+                const request = indexedDB.open('MirageTenderSystem', 1);
+                
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('tenders')) {
+                        db.createObjectStore('tenders', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('users')) {
+                        db.createObjectStore('users', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('sync')) {
+                        db.createObjectStore('sync', { keyPath: 'key' });
+                    }
+                };
+                
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    log('indexedDB-output', `IndexedDB connection successful\nDatabase: ${db.name}\nVersion: ${db.version}\nObject stores: ${Array.from(db.objectStoreNames).join(', ')}`, 'success');
+                    db.close();
+                };
+                
+                request.onerror = function(event) {
+                    log('indexedDB-output', `IndexedDB connection failed: ${event.target.error}`, 'error');
+                };
+            } catch (error) {
+                log('indexedDB-output', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function saveTestData() {
+            try {
+                const request = indexedDB.open('MirageTenderSystem', 1);
+                
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['tenders'], 'readwrite');
+                    const store = transaction.objectStore('tenders');
+                    
+                    const testTender = {
+                        id: 'test-tender-' + Date.now(),
+                        customerName: 'Test Customer',
+                        tenderNumber: 'TEST-001',
+                        createdAt: new Date(),
+                        updatedAt: new Date()
+                    };
+                    
+                    const addRequest = store.put(testTender);
+                    
+                    addRequest.onsuccess = function() {
+                        log('indexedDB-output', `Test tender saved successfully with ID: ${testTender.id}`, 'success');
+                    };
+                    
+                    addRequest.onerror = function() {
+                        log('indexedDB-output', `Failed to save test tender: ${addRequest.error}`, 'error');
+                    };
+                    
+                    db.close();
+                };
+                
+                request.onerror = function(event) {
+                    log('indexedDB-output', `Failed to open database: ${event.target.error}`, 'error');
+                };
+            } catch (error) {
+                log('indexedDB-output', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadFromIndexedDB() {
+            try {
+                const request = indexedDB.open('MirageTenderSystem', 1);
+                
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['tenders'], 'readonly');
+                    const store = transaction.objectStore('tenders');
+                    const getAllRequest = store.getAll();
+                    
+                    getAllRequest.onsuccess = function() {
+                        const tenders = getAllRequest.result;
+                        let output = `Found ${tenders.length} tenders in IndexedDB\n`;
+                        
+                        if (tenders.length > 0) {
+                            tenders.forEach((tender, index) => {
+                                output += `${index + 1}. ${tender.customerName || 'No name'} (ID: ${tender.id})\n`;
+                            });
+                        }
+                        
+                        log('indexedDB-output', output, 'success');
+                    };
+                    
+                    getAllRequest.onerror = function() {
+                        log('indexedDB-output', `Failed to load tenders: ${getAllRequest.error}`, 'error');
+                    };
+                    
+                    db.close();
+                };
+                
+                request.onerror = function(event) {
+                    log('indexedDB-output', `Failed to open database: ${event.target.error}`, 'error');
+                };
+            } catch (error) {
+                log('indexedDB-output', `Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function forceMigration() {
+            try {
+                // Get data from localStorage
+                const tendersData = localStorage.getItem('mirage_tenders');
+                if (!tendersData) {
+                    log('migration-output', 'No tenders found in localStorage to migrate', 'error');
+                    return;
+                }
+                
+                const tenders = JSON.parse(tendersData);
+                log('migration-output', `Found ${tenders.length} tenders in localStorage. Starting migration...`);
+                
+                // Open IndexedDB
+                const request = indexedDB.open('MirageTenderSystem', 1);
+                
+                request.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('tenders')) {
+                        db.createObjectStore('tenders', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('sync')) {
+                        db.createObjectStore('sync', { keyPath: 'key' });
+                    }
+                };
+                
+                request.onsuccess = function(event) {
+                    const db = event.target.result;
+                    const transaction = db.transaction(['tenders', 'sync'], 'readwrite');
+                    const tendersStore = transaction.objectStore('tenders');
+                    const syncStore = transaction.objectStore('sync');
+                    
+                    // Clear existing data
+                    const clearRequest = tendersStore.clear();
+                    
+                    clearRequest.onsuccess = function() {
+                        log('migration-output', 'Cleared existing IndexedDB data. Adding tenders...');
+                        
+                        // Add all tenders
+                        let completed = 0;
+                        tenders.forEach((tender, index) => {
+                            const putRequest = tendersStore.put(tender);
+                            
+                            putRequest.onsuccess = function() {
+                                completed++;
+                                if (completed === tenders.length) {
+                                    // All tenders added, update sync timestamp
+                                    syncStore.put({ key: 'tenders_last_sync', timestamp: Date.now() });
+                                    log('migration-output', `Successfully migrated ${completed} tenders to IndexedDB!`, 'success');
+                                }
+                            };
+                            
+                            putRequest.onerror = function() {
+                                log('migration-output', `Error adding tender ${index}: ${putRequest.error}`, 'error');
+                            };
+                        });
+                    };
+                    
+                    clearRequest.onerror = function() {
+                        log('migration-output', `Error clearing IndexedDB: ${clearRequest.error}`, 'error');
+                    };
+                    
+                    db.close();
+                };
+                
+                request.onerror = function(event) {
+                    log('migration-output', `Failed to open database: ${event.target.error}`, 'error');
+                };
+                
+            } catch (error) {
+                log('migration-output', `Migration error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>

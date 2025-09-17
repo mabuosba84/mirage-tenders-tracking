@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { Tender, User } from '@/types'
 import { X, Download, Printer, Calendar, Clock, DollarSign, TrendingUp, User as UserIcon, FileText, Package, Paperclip, Shield, AlertTriangle, Eye, ExternalLink } from 'lucide-react'
-import { formatResponseTime, getResponseTimeStatus } from '@/utils/dateCalculations'
+import { formatResponseTime, getResponseTimeStatus, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderPreviewProps {
   tender: Tender
@@ -150,41 +150,459 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
     }
   }
 
-  const handleViewAttachment = (attachment: any) => {
+  const handleViewAttachment = async (attachment: any) => {
     if (attachment.url) {
-      // If the attachment has a URL, open it in a new window
+      // Check if it's a blob URL - these need special handling
+      if (attachment.url.startsWith('blob:')) {
+        // For blob URLs, first try to fetch from server if we have file ID
+        if (attachment.id) {
+          try {
+            console.log(`Attempting server lookup for file ID: ${attachment.id}`)
+            const serverUrl = `/api/files/${attachment.id}`
+            const response = await fetch(serverUrl, { method: 'HEAD' })
+            
+            if (response.ok) {
+              console.log('File found on server, opening for viewing in new tab')
+              // Use the viewer endpoint for better PDF display
+              window.open(`/api/files/${attachment.id}/view`, '_blank')
+              return
+            }
+          } catch (error) {
+            console.warn('Server file lookup failed:', error)
+          }
+        }
+
+        // If server lookup failed, try the blob URL
+        try {
+          console.log('Attempting to fetch blob URL:', attachment.url)
+          const response = await fetch(attachment.url)
+          
+          if (!response.ok) {
+            throw new Error(`Blob fetch failed with status: ${response.status}`)
+          }
+          
+          const blob = await response.blob()
+          console.log('Blob fetched successfully, size:', blob.size)
+          
+          // Get file extension for content type detection
+          const fileExtension = attachment.name.split('.').pop()?.toLowerCase()
+          
+          // Create a new object URL in the current window context
+          const objectUrl = URL.createObjectURL(blob)
+          
+          // For images, create an image viewer with the object URL
+          if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg'].includes(fileExtension || '')) {
+            const previewWindow = window.open('', '_blank')
+            if (previewWindow) {
+              // Set up cleanup for the object URL
+              previewWindow.addEventListener('beforeunload', () => {
+                URL.revokeObjectURL(objectUrl)
+              })
+              
+              previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>${attachment.name}</title>
+                  <style>
+                    body { 
+                      margin: 0; 
+                      padding: 20px; 
+                      background: #f0f0f0; 
+                      display: flex; 
+                      justify-content: center; 
+                      align-items: center; 
+                      min-height: 100vh; 
+                      font-family: Arial, sans-serif;
+                    }
+                    img { 
+                      max-width: 100%; 
+                      max-height: 100vh; 
+                      box-shadow: 0 4px 8px rgba(0,0,0,0.1); 
+                      background: white; 
+                      padding: 10px; 
+                      border-radius: 4px;
+                    }
+                    .loading {
+                      text-align: center;
+                      color: #666;
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div class="loading">Loading image...</div>
+                  <script>
+                    // Load the image and replace the loading text
+                    const img = new Image();
+                    img.onload = function() {
+                      document.body.innerHTML = '<img src="' + this.src + '" alt="${attachment.name}" />';
+                    };
+                    img.onerror = function() {
+                      document.body.innerHTML = '<div class="loading">Error loading image: ${attachment.name}</div>';
+                    };
+                    img.src = '${objectUrl}';
+                  </script>
+                </body>
+                </html>
+              `)
+              previewWindow.document.close()
+            }
+            return
+          }
+          
+          // For PDFs, try to display them using the object URL
+          if (fileExtension === 'pdf') {
+            const previewWindow = window.open('', '_blank')
+            if (previewWindow) {
+              // Set up cleanup for the object URL
+              previewWindow.addEventListener('beforeunload', () => {
+                URL.revokeObjectURL(objectUrl)
+              })
+              
+              previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                  <title>${attachment.name}</title>
+                  <style>
+                    body { margin: 0; padding: 0; }
+                    iframe { width: 100%; height: 100vh; border: none; }
+                    .fallback { 
+                      padding: 40px; 
+                      text-align: center; 
+                      font-family: Arial, sans-serif;
+                      background: #f5f5f5;
+                      min-height: 100vh;
+                      display: flex;
+                      flex-direction: column;
+                      justify-content: center;
+                      align-items: center;
+                    }
+                    .download-btn { 
+                      background: #007bff; 
+                      color: white; 
+                      padding: 12px 24px; 
+                      border: none; 
+                      border-radius: 4px; 
+                      text-decoration: none; 
+                      display: inline-block; 
+                      margin-top: 20px; 
+                    }
+                  </style>
+                </head>
+                <body>
+                  <div id="pdf-container">
+                    <iframe src="${objectUrl}" type="application/pdf"></iframe>
+                  </div>
+                  <script>
+                    // Fallback if PDF doesn't load
+                    setTimeout(function() {
+                      const iframe = document.querySelector('iframe');
+                      if (iframe && !iframe.contentDocument) {
+                        document.body.innerHTML = \`
+                          <div class="fallback">
+                            <h2>📄 ${attachment.name}</h2>
+                            <p>PDF preview is not available in this browser.</p>
+                            <a href="${objectUrl}" download="${attachment.name}" class="download-btn">Download PDF</a>
+                          </div>
+                        \`;
+                      }
+                    }, 3000);
+                  </script>
+                </body>
+                </html>
+              `)
+              previewWindow.document.close()
+            }
+            return
+          }
+          
+          // For other file types, create a download page with the object URL
+          const previewWindow = window.open('', '_blank')
+          if (previewWindow) {
+            // Set up cleanup for the object URL
+            previewWindow.addEventListener('beforeunload', () => {
+              URL.revokeObjectURL(objectUrl)
+            })
+            
+            previewWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>${attachment.name}</title>
+                <style>
+                  body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f5f5f5; }
+                  .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                  .icon { font-size: 64px; margin-bottom: 20px; }
+                  .filename { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #333; }
+                  .download-btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 4px; text-decoration: none; display: inline-block; margin-top: 20px; }
+                  .download-btn:hover { background: #0056b3; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="icon">${getFileIconEmoji(fileExtension)}</div>
+                  <div class="filename">${attachment.name}</div>
+                  <p>This file type cannot be previewed directly in the browser.</p>
+                  <a href="${objectUrl}" download="${attachment.name}" class="download-btn">Download File</a>
+                </div>
+              </body>
+              </html>
+            `)
+            previewWindow.document.close()
+          }
+          return
+        } catch (error) {
+          console.error('Error handling blob URL:', error)
+          
+          // If blob URL failed, show a helpful error message to the user
+          const fileExtension = attachment.name?.split('.').pop()?.toLowerCase()
+          const previewWindow = window.open('', '_blank')
+          if (previewWindow) {
+            previewWindow.document.write(`
+              <!DOCTYPE html>
+              <html>
+              <head>
+                <title>File Access Error - ${attachment.name}</title>
+                <style>
+                  body { 
+                    font-family: Arial, sans-serif; 
+                    padding: 40px; 
+                    text-align: center; 
+                    background: #f5f5f5; 
+                    min-height: 100vh;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                  }
+                  .container { 
+                    max-width: 600px; 
+                    background: white; 
+                    padding: 40px; 
+                    border-radius: 8px; 
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+                  }
+                  .icon { font-size: 64px; margin-bottom: 20px; color: #ff6b6b; }
+                  .filename { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #333; }
+                  .error-message { font-size: 16px; color: #666; margin-bottom: 30px; }
+                  .retry-btn { 
+                    background: #007bff; 
+                    color: white; 
+                    padding: 12px 24px; 
+                    border: none; 
+                    border-radius: 4px; 
+                    text-decoration: none; 
+                    display: inline-block; 
+                    margin: 10px; 
+                    cursor: pointer;
+                  }
+                  .retry-btn:hover { background: #0056b3; }
+                  .info-box { 
+                    background: #e3f2fd; 
+                    padding: 20px; 
+                    border-radius: 4px; 
+                    border-left: 4px solid #2196f3; 
+                    text-align: left; 
+                    margin-top: 20px;
+                  }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="icon">⚠️</div>
+                  <div class="filename">${attachment.name}</div>
+                  <div class="error-message">
+                    The file link has expired or is no longer accessible.
+                  </div>
+                  <button class="retry-btn" onclick="window.close()">Close Window</button>
+                  <div class="info-box">
+                    <strong>What happened?</strong><br>
+                    File links can expire for security reasons. Please try:<br>
+                    • Refreshing the main page and trying again<br>
+                    • Re-uploading the file if it's missing<br>
+                    • Contacting the system administrator if the problem persists
+                  </div>
+                </div>
+              </body>
+              </html>
+            `)
+            previewWindow.document.close()
+          }
+          return
+        }
+      }
+      
+      // Check if it's a server-side URL (starts with /api/files/)
+      if (attachment.url.startsWith('/api/files/')) {
+        // Extract the file ID from the URL and use the viewer endpoint
+        const fileIdMatch = attachment.url.match(/\/api\/files\/([^?\/]+)/)
+        if (fileIdMatch && fileIdMatch[1]) {
+          window.open(`/api/files/${fileIdMatch[1]}/view`, '_blank')
+        } else {
+          // Fallback to direct URL if we can't extract the file ID
+          window.open(attachment.url, '_blank')
+        }
+        return
+      }
+      
+      // For regular URLs, open in new window
       window.open(attachment.url, '_blank')
     } else {
-      // Handle different file types appropriately
+      // Try to find the file on the server using the attachment ID
+      if (attachment.id) {
+        try {
+          const serverUrl = `/api/files/${attachment.id}`
+          const response = await fetch(serverUrl, { method: 'HEAD' })
+          
+          if (response.ok) {
+            // Use the viewer endpoint for better display
+            window.open(`/api/files/${attachment.id}/view`, '_blank')
+            return
+          }
+        } catch (error) {
+          console.warn('File not found on server:', error)
+        }
+      }
+      
+      // If we can't find the file, create a temporary preview based on file type
       const fileExtension = attachment.name.split('.').pop()?.toLowerCase()
       
-      switch (fileExtension) {
-        case 'pdf':
-          alert(`Opening PDF: ${attachment.name}\n\nThis would open the PDF in a new browser tab or PDF viewer.`)
-          break
-        case 'doc':
-        case 'docx':
-          alert(`Opening Word Document: ${attachment.name}\n\nThis would either:\n- Open in browser if supported\n- Download and open with default application\n- Use an online viewer like Office 365`)
-          break
-        case 'xls':
-        case 'xlsx':
-          alert(`Opening Excel Document: ${attachment.name}\n\nThis would either:\n- Open in browser if supported\n- Download and open with default application\n- Use an online viewer like Office 365`)
-          break
-        case 'jpg':
-        case 'jpeg':
-        case 'png':
-        case 'gif':
-          alert(`Opening Image: ${attachment.name}\n\nThis would display the image in a modal or new tab.`)
-          break
-        default:
-          alert(`Opening File: ${attachment.name}\n\nThis would open the file with the appropriate application.`)
+      // Create a simple preview page
+      const previewWindow = window.open('', '_blank')
+      if (previewWindow) {
+        previewWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>File Preview - ${attachment.name}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 40px; text-align: center; background: #f5f5f5; }
+              .container { max-width: 600px; margin: 0 auto; background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+              .icon { font-size: 64px; margin-bottom: 20px; }
+              .filename { font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #333; }
+              .message { font-size: 16px; color: #666; margin-bottom: 30px; }
+              .info { background: #e3f2fd; padding: 20px; border-radius: 4px; border-left: 4px solid #2196f3; text-align: left; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="icon">${getFileIconEmoji(fileExtension)}</div>
+              <div class="filename">${attachment.name}</div>
+              <div class="message">File preview is not available</div>
+              <div class="info">
+                <strong>File Type:</strong> ${getFileType(fileExtension)}<br>
+                <strong>Uploaded by:</strong> ${attachment.uploadedBy || 'Unknown'}<br>
+                <strong>Upload Date:</strong> ${attachment.uploadedAt ? new Date(attachment.uploadedAt).toLocaleDateString() : 'Unknown'}
+              </div>
+            </div>
+          </body>
+          </html>
+        `)
+        previewWindow.document.close()
       }
     }
   }
 
-  const handleDownloadAttachment = (attachment: any) => {
+  const getFileIconEmoji = (extension: string | undefined) => {
+    switch (extension) {
+      case 'pdf': return '📄'
+      case 'doc':
+      case 'docx': return '📝'
+      case 'xls':
+      case 'xlsx': return '📊'
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif': return '🖼️'
+      default: return '📁'
+    }
+  }
+
+  const getFileType = (extension: string | undefined) => {
+    switch (extension) {
+      case 'pdf': return 'PDF Document'
+      case 'doc':
+      case 'docx': return 'Word Document'
+      case 'xls':
+      case 'xlsx': return 'Excel Document'
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif': return 'Image File'
+      default: return 'Document'
+    }
+  }
+
+  const handleDownloadAttachment = async (attachment: any) => {
     if (attachment.url) {
-      // Create a download link
+      // Check if it's a blob URL - these don't work across domains
+      if (attachment.url.startsWith('blob:')) {
+        // Try to fetch the file from the server using the file ID
+        if (attachment.id) {
+          try {
+            const serverUrl = `/api/files/${attachment.id}?download=true` // Add download parameter
+            const response = await fetch(serverUrl)
+            
+            if (response.ok) {
+              // File exists on server, download it directly
+              const blob = await response.blob()
+              const url = window.URL.createObjectURL(blob)
+              const link = document.createElement('a')
+              link.href = url
+              link.download = attachment.name
+              document.body.appendChild(link)
+              link.click()
+              document.body.removeChild(link)
+              window.URL.revokeObjectURL(url)
+              return
+            }
+          } catch (error) {
+            console.warn('Could not fetch file from server:', error)
+          }
+        }
+        
+        // If server fetch fails, try direct download
+        try {
+          const link = document.createElement('a')
+          link.href = attachment.url
+          link.download = attachment.name
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+        } catch (error) {
+          console.warn('Direct download failed:', error)
+          alert(`Unable to download file: ${attachment.name}`)
+        }
+        return
+      }
+      
+      // Check if it's a server-side URL (starts with /api/files/)
+      if (attachment.url.startsWith('/api/files/')) {
+        // For server-side files, create download link with proper headers
+        try {
+          const downloadUrl = attachment.url + (attachment.url.includes('?') ? '&download=true' : '?download=true')
+          const response = await fetch(downloadUrl)
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = attachment.name
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+          } else {
+            alert(`Error downloading file: ${attachment.name}\nStatus: ${response.status}`)
+          }
+        } catch (error) {
+          console.error('Download error:', error)
+          alert(`Error downloading file: ${attachment.name}`)
+        }
+        return
+      }
+      
+      // For regular URLs, create download link
       const link = document.createElement('a')
       link.href = attachment.url
       link.download = attachment.name
@@ -192,11 +610,30 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
       link.click()
       document.body.removeChild(link)
     } else {
-      // Handle file download
-      alert(`Downloading: ${attachment.name}\n\nThis would:\n1. Fetch the file from the server\n2. Create a download link\n3. Automatically start the download\n\nFile would be saved to your Downloads folder.`)
+      // Try to find the file on the server using the attachment ID
+      if (attachment.id) {
+        try {
+          const serverUrl = `/api/files/${attachment.id}`
+          const response = await fetch(serverUrl)
+          
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const link = document.createElement('a')
+            link.href = url
+            link.download = attachment.name
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+            window.URL.revokeObjectURL(url)
+            return
+          }
+        } catch (error) {
+          console.warn('File not found on server:', error)
+        }
+      }
       
-      // Log download action
-      console.log(`Starting download of ${attachment.name}...`)
+      alert(`Unable to download file: ${attachment.name}\n\nThe file may not be available on the server.`)
     }
   }
 
@@ -312,14 +749,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
               <p className="text-gray-700">{formatDate(tender.dateOfPriceReceivedFromHp)}</p>
             </div>
 
-            {/* Bid Bond Issue Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-yellow-600" />
-                <h3 className="font-semibold text-gray-900">Bid Bond Issue Date</h3>
-              </div>
-              <p className="text-gray-700">{formatDate(tender.bidBondIssueDate)}</p>
-            </div>
+
           </div>
 
           {/* Response Time Analysis */}
@@ -393,7 +823,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                     ? tender.profitMargin > 0 ? 'text-green-700' : 'text-red-700'
                     : 'text-gray-500'
                 }`}>
-                  {tender.profitMargin !== null ? `${tender.profitMargin.toFixed(1)}%` : 'Not calculated'}
+                  {tender.profitMargin !== null ? `${formatPercentage(tender.profitMargin)}%` : 'Not calculated'}
                 </p>
               </div>
             )}
@@ -467,7 +897,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                           {user.permissions?.canViewSellingPrice ? (item.sellingPrice ? `${item.sellingPrice.toLocaleString()} JOD` : 'N/A') : 'N/A'}
                         </td>
                         <td className={`px-6 py-4 whitespace-nowrap text-sm ${user.permissions?.canViewProfitMargin && item.profitMargin < 0 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
-                          {user.permissions?.canViewProfitMargin ? (item.profitMargin !== undefined ? `${item.profitMargin.toFixed(2)}%` : 'N/A') : 'N/A'}
+                          {user.permissions?.canViewProfitMargin ? (item.profitMargin !== undefined ? `${formatPercentage(item.profitMargin)}%` : 'N/A') : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {item.totalPrice.toLocaleString()} JOD
@@ -679,6 +1109,51 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Proposal Documents Section */}
+          {tender.attachments && tender.attachments.filter(att => att.type === 'proposal_offer').length > 0 && (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
+                <FileText className="h-5 w-5 mr-2 text-purple-600" />
+                <span>Proposal Documents</span>
+              </h3>
+              <div className="space-y-4">
+                {tender.attachments
+                  .filter(att => att.type === 'proposal_offer')
+                  .map((attachment, index) => (
+                    <div key={attachment.id || `${tender.id}-proposal-${index}`} className="flex items-center justify-between bg-purple-50 rounded-lg p-4 border border-purple-200">
+                      <div className="flex items-center space-x-3">
+                        {getFileIcon(attachment.name)}
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
+                          <p className="text-xs text-gray-500">
+                            {getFileTypeDescription(attachment.name)} • Uploaded on {formatDate(attachment.uploadedAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleViewAttachment(attachment)}
+                          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-purple-600 hover:text-purple-800 hover:bg-purple-100 rounded-md transition-all duration-200 border border-transparent hover:border-purple-200"
+                          title="View proposal document"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>View</span>
+                        </button>
+                        <button
+                          onClick={() => handleDownloadAttachment(attachment)}
+                          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-all duration-200 border border-transparent hover:border-green-200"
+                          title="Download proposal document"
+                        >
+                          <Download className="h-4 w-4" />
+                          <span>Download</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
               </div>
             </div>
           )}          {/* Audit Trail */}

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Tender, User } from '@/types'
 import { FileText, Download, Printer, Filter, Calendar } from 'lucide-react'
+import { formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface ReportsProps {
   tenders: Tender[]
@@ -125,13 +126,35 @@ export default function Reports({ tenders, user }: ReportsProps) {
       }
       
       if (doc) {
-        // Open print dialog
-        const pdfBlob = doc.output('blob')
-        const pdfUrl = URL.createObjectURL(pdfBlob)
-        const printWindow = window.open(pdfUrl)
-        if (printWindow) {
-          printWindow.focus()
-          printWindow.print()
+        // Open print dialog using a more secure method
+        try {
+          // Get PDF as data URL instead of blob URL
+          const pdfDataUri = doc.output('dataurlstring')
+          
+          // Create a new window with the PDF embedded
+          const printWindow = window.open('', '_blank')
+          if (printWindow) {
+            printWindow.document.write(`
+              <html>
+                <head>
+                  <title>Print Report</title>
+                  <style>
+                    body { margin: 0; padding: 0; }
+                    iframe { width: 100%; height: 100vh; border: none; }
+                  </style>
+                </head>
+                <body>
+                  <iframe src="${pdfDataUri}" onload="window.print()"></iframe>
+                </body>
+              </html>
+            `)
+            printWindow.document.close()
+          }
+        } catch (error) {
+          console.error('Error with secure print method, trying fallback:', error)
+          // Fallback: just download the PDF
+          const fileName = `${reportType}_report_${new Date().toISOString().split('T')[0]}.pdf`
+          doc.save(fileName)
         }
       }
     } catch (error) {
@@ -171,6 +194,7 @@ export default function Reports({ tenders, user }: ReportsProps) {
               value={reportType}
               onChange={(e) => setReportType(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Select report type"
             >
               <option value="summary">Summary Report</option>
               <option value="detailed">Detailed Report</option>
@@ -194,6 +218,7 @@ export default function Reports({ tenders, user }: ReportsProps) {
               value={dateRange}
               onChange={(e) => setDateRange(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Select date range"
             >
               <option value="all">All Time</option>
               <option value="month">Last Month</option>
@@ -211,6 +236,7 @@ export default function Reports({ tenders, user }: ReportsProps) {
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as any)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Select status filter"
             >
               <option value="all">All Statuses</option>
               <option value="Won">Won</option>
@@ -246,8 +272,8 @@ export default function Reports({ tenders, user }: ReportsProps) {
           <div className="bg-purple-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-purple-600">
               {filteredTenders.length > 0 
-                ? ((filteredTenders.filter(t => t.tenderStatus === 'Won').length / filteredTenders.length) * 100).toFixed(1)
-                : '0'}%
+                ? formatPercentage((filteredTenders.filter(t => t.tenderStatus === 'Won').length / filteredTenders.length) * 100)
+                : '0.00'}%
             </div>
             <div className="text-sm text-gray-600">Win Rate</div>
           </div>

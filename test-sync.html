@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Central Storage Sync</title>
+</head>
+<body>
+    <h1>Test Central Storage Sync</h1>
+    <div id="output"></div>
+    <script>
+        // Test the IndexedDB functionality
+        async function testSync() {
+            const output = document.getElementById('output');
+            
+            try {
+                // Check localStorage data
+                const localTenders = localStorage.getItem('mirage_tenders');
+                const localUsers = localStorage.getItem('mirage_users');
+                
+                output.innerHTML += `<p>LocalStorage tenders: ${localTenders ? JSON.parse(localTenders).length : 0} items</p>`;
+                output.innerHTML += `<p>LocalStorage users: ${localUsers ? JSON.parse(localUsers).length : 0} items</p>`;
+                
+                // Test IndexedDB access
+                const dbRequest = indexedDB.open('MirageTenderSystem', 1);
+                
+                dbRequest.onupgradeneeded = function(event) {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains('tenders')) {
+                        db.createObjectStore('tenders', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('users')) {
+                        db.createObjectStore('users', { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains('sync')) {
+                        db.createObjectStore('sync', { keyPath: 'key' });
+                    }
+                };
+                
+                dbRequest.onsuccess = function(event) {
+                    const db = event.target.result;
+                    output.innerHTML += `<p>✅ IndexedDB connection successful</p>`;
+                    
+                    // Check IndexedDB data
+                    const transaction = db.transaction(['tenders', 'users'], 'readonly');
+                    const tendersStore = transaction.objectStore('tenders');
+                    const usersStore = transaction.objectStore('users');
+                    
+                    const tendersRequest = tendersStore.getAll();
+                    const usersRequest = usersStore.getAll();
+                    
+                    tendersRequest.onsuccess = function() {
+                        output.innerHTML += `<p>IndexedDB tenders: ${tendersRequest.result.length} items</p>`;
+                    };
+                    
+                    usersRequest.onsuccess = function() {
+                        output.innerHTML += `<p>IndexedDB users: ${usersRequest.result.length} items</p>`;
+                    };
+                };
+                
+                dbRequest.onerror = function(event) {
+                    output.innerHTML += `<p>❌ IndexedDB error: ${event.target.error}</p>`;
+                };
+                
+            } catch (error) {
+                output.innerHTML += `<p>❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test on page load
+        testSync();
+        
+        // Also test current URL
+        document.body.innerHTML += `<p>Current URL: ${window.location.href}</p>`;
+    </script>
+</body>
+</html>

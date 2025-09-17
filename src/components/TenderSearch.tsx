@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Tender } from '@/types'
 import { Search, Filter, Calendar, Users, Package, FileText, RefreshCw, X, Eye } from 'lucide-react'
-import { formatNumberWithCommas } from '@/utils/dateCalculations'
+import { formatNumberWithCommas, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderSearchProps {
   tenders: Tender[]
@@ -381,7 +381,7 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
                         )}
                         {user.permissions?.canViewProfitMargin && tender.profitMargin !== null && (
                           <div className={tender.profitMargin < 0 ? 'text-red-600' : 'text-green-600'}>
-                            Margin: {tender.profitMargin.toFixed(1)}%
+                            Margin: {formatPercentage(tender.profitMargin)}%
                           </div>
                         )}
                       </div>

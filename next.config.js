@@ -1,26 +1,39 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // App Router is enabled by default in Next.js 13+
+  // Production optimizations for Vercel
+  serverExternalPackages: [],
   
-  // Image optimization
+  // Image optimization for production
   images: {
-    domains: ['localhost'],
+    domains: ['localhost', 'vercel.app'],
     formats: ['image/webp', 'image/avif'],
   },
   
   // Performance optimizations
   compress: true,
   
-  // Security headers
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/api/(.*)',
         headers: [
           {
-            key: 'X-Frame-Options',
-            value: 'DENY',
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
           },
+          {
+            key: 'Access-Control-Allow-Methods',
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
+          },
+          {
+            key: 'Access-Control-Allow-Headers',
+            value: 'Content-Type, Authorization',
+          },
+        ],
+      },
+      {
+        source: '/(.*)',
+        headers: [
           {
             key: 'X-Content-Type-Options',
             value: 'nosniff',

@@ -141,14 +141,23 @@ export const authenticateUser = (username: string, password: string): User | nul
   const user = users.find(u => u.username === username && u.isActive)
   if (!user) return null
   
-  // Check password
-  if (credentials[username] !== password) return null
+  // Check password in local credentials first
+  if (credentials[username] === password) {
+    // Update last login
+    user.lastLogin = new Date()
+    updateUser(user)
+    return user
+  }
   
-  // Update last login
-  user.lastLogin = new Date()
-  updateUser(user)
+  // If not found in local credentials, check if user has server-stored password
+  if ('password' in user && (user as any).password === password) {
+    // Update last login
+    user.lastLogin = new Date()
+    updateUser(user)
+    return user
+  }
   
-  return user
+  return null
 }
 
 export const resetUserPassword = (username: string, newPassword: string): boolean => {

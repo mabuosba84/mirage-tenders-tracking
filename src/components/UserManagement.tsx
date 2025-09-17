@@ -19,12 +19,14 @@ import {
   X
 } from 'lucide-react'
 import { getAllUsers, addUser, updateUser, deleteUser, resetUserPassword } from '@/utils/userStorage'
+import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
 interface UserManagementProps {
   currentUser: User
+  onAutoSync?: () => Promise<void>
 }
 
-export default function UserManagement({ currentUser }: UserManagementProps) {
+export default function UserManagement({ currentUser, onAutoSync }: UserManagementProps) {
   const [users, setUsers] = useState<User[]>([])
   const [showAddUser, setShowAddUser] = useState(false)
   const [editingUser, setEditingUser] = useState<User | null>(null)
@@ -67,10 +69,34 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<any>({})
 
-  // Load users from persistent storage
+  // Load users from centralized storage
   useEffect(() => {
-    setUsers(getAllUsers())
+    const loadUsers = async () => {
+      try {
+        const centralUsers = await loadUsersFromStorage()
+        if (centralUsers && centralUsers.length > 0) {
+          setUsers(centralUsers)
+        } else {
+          // Fallback to local storage users
+          setUsers(getAllUsers())
+        }
+      } catch (error) {
+        console.error('Error loading users from central storage:', error)
+        setUsers(getAllUsers())
+      }
+    }
+    loadUsers()
   }, [])
+
+  // Helper function to sync users to centralized storage
+  const syncUsersToStorage = async () => {
+    try {
+      const currentUsers = getAllUsers()
+      await saveUsersToStorage(currentUsers)
+    } catch (error) {
+      console.error('Error syncing users to central storage:', error)
+    }
+  }
 
   const resetForm = () => {
     setUserForm({
@@ -175,10 +201,25 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
       // Add user to storage with password
       addUser(newUser, userForm.password)
       
+      // Sync to centralized storage
+      await syncUsersToStorage()
+      
       // Update local state
       setUsers(getAllUsers())
       setShowAddUser(false)
       resetForm()
+      
+      // Trigger automatic sync after adding user
+      if (onAutoSync) {
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Auto-sync triggered after adding user')
+            await onAutoSync()
+          } catch (error) {
+            console.error('❌ Auto-sync failed after adding user:', error)
+          }
+        }, 500)
+      }
     } catch (error) {
       console.error('Error adding user:', error)
     } finally {
@@ -208,6 +249,9 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
       // Update user in storage
       updateUser(updatedUser)
       
+      // Sync to centralized storage
+      await syncUsersToStorage()
+      
       // If the updated user is the current user, update localStorage
       if (updatedUser.id === currentUser.id) {
         localStorage.setItem('currentUser', JSON.stringify(updatedUser))
@@ -219,6 +263,18 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
       setUsers(getAllUsers())
       setEditingUser(null)
       resetForm()
+      
+      // Trigger automatic sync after editing user
+      if (onAutoSync) {
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Auto-sync triggered after editing user')
+            await onAutoSync()
+          } catch (error) {
+            console.error('❌ Auto-sync failed after editing user:', error)
+          }
+        }, 500)
+      }
     } catch (error) {
       console.error('Error updating user:', error)
     } finally {
@@ -244,8 +300,23 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
       // Delete user from storage
       deleteUser(userId)
       
+      // Sync to centralized storage
+      await syncUsersToStorage()
+      
       // Update local state
       setUsers(getAllUsers())
+      
+      // Trigger automatic sync after deleting user
+      if (onAutoSync) {
+        setTimeout(async () => {
+          try {
+            console.log('🔄 Auto-sync triggered after deleting user')
+            await onAutoSync()
+          } catch (error) {
+            console.error('❌ Auto-sync failed after deleting user:', error)
+          }
+        }, 500)
+      }
     } catch (error) {
       console.error('Error deleting user:', error)
     } finally {
@@ -274,6 +345,9 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
         // Update user in storage
         updateUser(updatedUser)
         
+        // Sync to centralized storage
+        await syncUsersToStorage()
+        
         // Update local state
         setUsers(getAllUsers())
       }
@@ -297,6 +371,8 @@ export default function UserManagement({ currentUser }: UserManagementProps) {
         const success = resetUserPassword(user.username, passwordReset.newPassword)
         
         if (success) {
+          // Sync to centralized storage
+          await syncUsersToStorage()
           alert('Password has been reset successfully!')
           setShowPasswordReset(null)
           setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' })

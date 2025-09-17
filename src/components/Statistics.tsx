@@ -2,7 +2,7 @@
 
 import { Tender, User } from '@/types'
 import { TrendingUp, TrendingDown, Clock, Award, DollarSign, Percent, Shield } from 'lucide-react'
-import { formatResponseTime } from '@/utils/dateCalculations'
+import { formatResponseTime, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface StatisticsProps {
   tenders: Tender[]
@@ -164,7 +164,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Win Rate"
-          value={stats.winRate.toFixed(1)}
+          value={formatPercentage(stats.winRate)}
           icon={Percent}
           color="purple"
           suffix="%"
@@ -173,7 +173,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
         {user.permissions?.canViewSellingPrice ? (
           <StatCard
             title="Total Revenue"
-            value={stats.totalRevenue.toFixed(0)}
+            value={formatNumber(stats.totalRevenue)}
             icon={DollarSign}
             color="green"
             suffix=" JD"
@@ -191,7 +191,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
         {(user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) ? (
           <StatCard
             title="Total Profit"
-            value={stats.totalProfit.toFixed(0)}
+            value={formatNumber(stats.totalProfit)}
             icon={TrendingUp}
             color="blue"
             suffix=" JD"
@@ -209,7 +209,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
         {user.permissions?.canViewProfitMargin ? (
           <StatCard
             title="Avg Profit Margin"
-            value={stats.avgProfitMargin.toFixed(1)}
+            value={formatPercentage(stats.avgProfitMargin)}
             icon={Percent}
             color={stats.avgProfitMargin < 0 ? 'red' : 'purple'}
             suffix="%"
@@ -273,7 +273,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
                 <span className="text-sm font-medium text-gray-700">{status}</span>
               </div>
               <span className="text-sm text-gray-600">
-                {count} ({stats.totalTenders > 0 ? ((count / stats.totalTenders) * 100).toFixed(1) : 0}%)
+                {count} ({stats.totalTenders > 0 ? formatPercentage((count / stats.totalTenders) * 100) : '0.00'}%)
               </span>
             </div>
           ))}

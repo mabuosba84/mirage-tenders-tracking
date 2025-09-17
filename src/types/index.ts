@@ -59,6 +59,7 @@ export interface TenderAttachment {
   url: string
   uploadedBy: string
   uploadedAt: Date
+  crossDomainCompatible?: boolean // Optional flag for cross-domain file access
 }
 
 export interface Tender {
@@ -76,7 +77,6 @@ export interface Tender {
   profitMargin: number | null
   tenderStatus: 'Won' | 'Lost' | 'Under review' | 'Global Agreement'
   competitorWinningPrice: string | null
-  bidBondIssueDate: Date | null
   bankGuaranteeIssueDate: Date | null
   bankGuaranteeExpiryDate: Date | null
   opg: string | null
@@ -103,7 +103,6 @@ export interface TenderFormData {
   sellingPrice: string
   tenderStatus: 'Won' | 'Lost' | 'Under review' | 'Global Agreement'
   competitorWinningPrice: string
-  bidBondIssueDate: string
   bankGuaranteeIssueDate: string
   bankGuaranteeExpiryDate: string
   opg: string
@@ -123,7 +122,6 @@ export interface FormErrors {
   sellingPrice?: string
   tenderStatus?: string
   competitorWinningPrice?: string
-  bidBondIssueDate?: string
   bankGuaranteeIssueDate?: string
   bankGuaranteeExpiryDate?: string
   opg?: string

@@ -94,3 +94,23 @@ export function formatCurrency(amount: number | string, currency: string = 'JOD'
   
   return `${num.toLocaleString()} ${currency}`;
 }
+
+/**
+ * Format number with comma separators
+ */
+export function formatNumber(value: number): string {
+  if (isNaN(value)) {
+    return '0';
+  }
+  return value.toLocaleString();
+}
+
+/**
+ * Format percentage with 2 decimal places
+ */
+export function formatPercentage(value: number): string {
+  if (isNaN(value)) {
+    return '0.00';
+  }
+  return value.toFixed(2);
+}

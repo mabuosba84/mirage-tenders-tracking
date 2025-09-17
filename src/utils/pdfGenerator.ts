@@ -168,8 +168,7 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
       ['Request Date:', formatDate(tender.requestDate)],
       ['Submission Date:', formatDate(tender.submissionDate)],
       ['Price Request to HP:', formatDate(tender.dateOfPriceRequestToHp)],
-      ['Price Received from HP:', formatDate(tender.dateOfPriceReceivedFromHp)],
-      ['Bid Bond Issue Date:', formatDate(tender.bidBondIssueDate)]
+      ['Price Received from HP:', formatDate(tender.dateOfPriceReceivedFromHp)]
     ]
     
     timelineData.forEach(([label, value]) => {

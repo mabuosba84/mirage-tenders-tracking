@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { User, Tender } from '@/types'
 import { Edit, Trash2, Search, Filter, Calendar, DollarSign, Clock } from 'lucide-react'
-import { formatResponseTime, getResponseTimeStatus } from '@/utils/dateCalculations'
+import { formatResponseTime, getResponseTimeStatus, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderListProps {
   tenders: Tender[]
@@ -335,7 +335,7 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                           <span className={`text-sm font-medium ${
                             tender.profitMargin > 0 ? 'text-green-600' : 'text-red-600'
                           }`}>
-                            {tender.profitMargin.toFixed(1)}%
+                            {formatPercentage(tender.profitMargin)}%
                           </span>
                         ) : (
                           <span className="text-sm text-gray-500">-</span>

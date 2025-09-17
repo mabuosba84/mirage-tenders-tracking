@@ -1,6 +1,4 @@
-'use client'
-
-import { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { User } from '@/types'
 import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X } from 'lucide-react'
 
@@ -20,6 +18,48 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
     return null
   })
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Sync logo from central storage on component mount
+  useEffect(() => {
+    const syncLogoFromCentral = async () => {
+      try {
+        const response = await fetch('/api/logo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'getLogo' })
+        })
+        const result = await response.json()
+        
+        if (result.success && result.logo && result.logo.trim() !== '') {
+          // Only update if we got a non-empty logo and it's different from current
+          if (!logoUrl || logoUrl !== result.logo) {
+            setLogoUrl(result.logo)
+            localStorage.setItem('companyLogo', result.logo)
+            console.log('✅ Logo synced from central storage')
+          }
+        }
+      } catch (error) {
+        console.error('❌ Failed to sync logo from central storage:', error)
+      }
+    }
+    
+    syncLogoFromCentral()
+    
+    // Listen for logo sync events from AutoSyncManager
+    const handleLogoSynced = (event: CustomEvent) => {
+      const newLogoUrl = event.detail
+      if (newLogoUrl && newLogoUrl !== logoUrl) {
+        setLogoUrl(newLogoUrl)
+        console.log('✅ Header: Logo updated from sync event')
+      }
+    }
+    
+    window.addEventListener('logoSynced', handleLogoSynced as EventListener)
+    
+    return () => {
+      window.removeEventListener('logoSynced', handleLogoSynced as EventListener)
+    }
+  }, []) // Only run once on mount
 
   const navItems = [
     { id: 'overview' as const, label: 'Overview', icon: Home },
@@ -46,20 +86,50 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
       }
 
       const reader = new FileReader()
-      reader.onload = (e) => {
+      reader.onload = async (e) => {
         const result = e.target?.result as string
         setLogoUrl(result)
         localStorage.setItem('companyLogo', result)
+        
+        // Sync logo to central storage for cross-domain access
+        try {
+          await fetch('/api/logo', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'syncLogo',
+              logoData: result
+            })
+          })
+          console.log('✅ Logo synced to central storage')
+        } catch (error) {
+          console.error('❌ Failed to sync logo:', error)
+        }
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const handleRemoveLogo = () => {
+  const handleRemoveLogo = async () => {
     setLogoUrl(null)
     localStorage.removeItem('companyLogo')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
+    }
+    
+    // Sync logo removal to central storage
+    try {
+      await fetch('/api/logo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'syncLogo',
+          logoData: ''
+        })
+      })
+      console.log('✅ Logo removal synced to central storage')
+    } catch (error) {
+      console.error('❌ Failed to sync logo removal:', error)
     }
   }
 
