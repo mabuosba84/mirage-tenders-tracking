@@ -6,40 +6,83 @@ export async function GET(
 ) {
   try {
     const params = await context.params;
-    // For Vercel deployment, we'll return a simple viewer
-    // Since file system access is limited, we'll redirect to the download route
-    const baseUrl = request.nextUrl.origin;
-    const downloadUrl = `${baseUrl}/api/files/${params.id}`;
+    const fileId = params.id;
     
-    // Return HTML viewer that loads the file
+    // Since we're in a serverless environment, we'll create a viewer that uses the download endpoint
+    const baseUrl = request.nextUrl.origin;
+    const downloadUrl = `${baseUrl}/api/files/${fileId}`;
+    
+    // Create an HTML viewer that attempts to display the file
     const html = `
       <!DOCTYPE html>
-      <html>
+      <html lang="en">
         <head>
-          <title>File Viewer - ${params.id}</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>File Viewer - ${fileId}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .container { max-width: 800px; margin: 0 auto; }
-            .header { background: #f5f5f5; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
-            .content { text-align: center; }
-            iframe { width: 100%; height: 600px; border: 1px solid #ddd; }
-            .download-btn { 
-              background: #007bff; color: white; padding: 10px 20px; 
-              text-decoration: none; border-radius: 5px; margin: 10px; 
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0; 
+              padding: 20px; 
+              background-color: #f5f5f5;
             }
-            .download-btn:hover { background: #0056b3; }
+            .container { 
+              max-width: 1200px; 
+              margin: 0 auto; 
+              background: white;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              overflow: hidden;
+            }
+            .header { 
+              background: #007bff; 
+              color: white; 
+              padding: 20px; 
+              text-align: center;
+            }
+            .content { 
+              padding: 20px; 
+              text-align: center; 
+            }
+            .viewer-frame { 
+              width: 100%; 
+              height: 600px; 
+              border: 1px solid #ddd; 
+              border-radius: 4px;
+              background: white;
+            }
+            .download-btn { 
+              background: #28a745; 
+              color: white; 
+              padding: 12px 24px; 
+              text-decoration: none; 
+              border-radius: 5px; 
+              margin: 10px;
+              display: inline-block;
+              font-weight: bold;
+            }
+            .download-btn:hover { 
+              background: #218838; 
+            }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h2>File Viewer</h2>
-              <p>File ID: ${params.id}</p>
-              <a href="${downloadUrl}" class="download-btn" download>Download File</a>
+              <h2>📄 File Viewer</h2>
+              <p>File ID: ${fileId}</p>
             </div>
             <div class="content">
-              <iframe src="${downloadUrl}" frameborder="0"></iframe>
-              <p><small>If the file doesn't display above, <a href="${downloadUrl}">click here to download</a></small></p>
+              <a href="${downloadUrl}" class="download-btn" download>⬇️ Download File</a>
+              <div style="margin: 20px 0;">
+                <iframe 
+                  src="${downloadUrl}" 
+                  class="viewer-frame"
+                  frameborder="0">
+                </iframe>
+              </div>
+              <p><small>💡 If the file doesn't display above, click the download button to get the file.</small></p>
             </div>
           </div>
         </body>
@@ -48,11 +91,13 @@ export async function GET(
     
     return new NextResponse(html, {
       headers: {
-        'Content-Type': 'text/html'
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-cache'
       }
     });
     
   } catch (error) {
+    console.error('File viewer error:', error);
     return NextResponse.json(
       { error: 'Internal server error' }, 
       { status: 500 }
