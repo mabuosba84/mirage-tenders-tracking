@@ -36,37 +36,64 @@ let storage = {
 
 export async function GET() {
   try {
+    console.log('Sync GET: Returning data');
     return NextResponse.json(storage);
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to get data' }, { status: 500 });
+    console.error('Sync GET error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to get data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Sync POST: Starting');
+    
+    // Check if request has body
+    if (!request.body) {
+      console.log('Sync POST: No body provided');
+      return NextResponse.json({ error: 'No data provided' }, { status: 400 });
+    }
+    
     const data = await request.json();
+    console.log('Sync POST: Received data', Object.keys(data));
     
     if (data.tenders !== undefined) {
-      storage.tenders = data.tenders;
+      storage.tenders = Array.isArray(data.tenders) ? data.tenders : [];
+      console.log('Sync POST: Updated tenders, count:', storage.tenders.length);
     }
     if (data.users !== undefined) {
-      storage.users = data.users;
+      storage.users = Array.isArray(data.users) ? data.users : [];
+      console.log('Sync POST: Updated users, count:', storage.users.length);
     }
     if (data.files !== undefined) {
-      storage.files = data.files;
+      storage.files = Array.isArray(data.files) ? data.files : [];
+      console.log('Sync POST: Updated files, count:', storage.files.length);
     }
     if (data.settings !== undefined) {
-      storage.settings = data.settings;
+      storage.settings = { ...storage.settings, ...data.settings };
+      console.log('Sync POST: Updated settings');
     }
     
     storage.lastUpdated = new Date().toISOString();
     
-    return NextResponse.json({
+    const response = {
       success: true,
       message: 'Data saved successfully',
-      count: storage.tenders.length
-    });
+      count: storage.tenders.length,
+      timestamp: storage.lastUpdated
+    };
+    
+    console.log('Sync POST: Success', response);
+    return NextResponse.json(response);
+    
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to save data' }, { status: 500 });
+    console.error('Sync POST error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to save data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
