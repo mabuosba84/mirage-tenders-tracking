@@ -25,33 +25,62 @@ export default function Login({ onLogin }: LoginProps) {
 
     try {
       // First try to sync users from server
+      let serverUsers: any[] = []
       try {
         const response = await fetch('/api/sync')
         if (response.ok) {
           const data = await response.json()
           if (data.users && Array.isArray(data.users)) {
-            // Store synced users locally
-            localStorage.setItem('mirage_users', JSON.stringify(data.users))
-            localStorage.setItem('mirage_user_credentials', JSON.stringify({
-              'admin': 'admin123',
-              'user': 'user123',
-              'Basil': 'password123',
-              'Dina': 'password123'
-            }))
-            console.log('Synced users from server:', data.users.length)
+            serverUsers = data.users
+            console.log('Synced users from server:', serverUsers.length)
           }
         }
       } catch (syncError) {
         console.log('Could not sync from server, using local storage:', syncError)
       }
       
+      // Check if user exists in server data first
+      if (serverUsers.length > 0) {
+        const serverUser = serverUsers.find(u => 
+          u.username === formData.username && 
+          u.password === formData.password && 
+          u.isActive
+        )
+        
+        if (serverUser) {
+          // Store synced users locally for future use
+          localStorage.setItem('mirage_users', JSON.stringify(serverUsers))
+          
+          // Convert server user to client user format
+          const user = {
+            ...serverUser,
+            lastLogin: new Date(),
+            permissions: {
+              canViewCostFromVendor: serverUser.permissions?.canViewCostFromHP || false,
+              canViewSellingPrice: serverUser.permissions?.canViewSellingPrice || true,
+              canViewProfitMargin: serverUser.permissions?.canViewProfitMargin || false,
+              canViewTenderItems: serverUser.permissions?.canViewTenderItems || true,
+              canEditTenders: serverUser.permissions?.canEditTenders || true,
+              canDeleteTenders: serverUser.permissions?.canDeleteTenders || false,
+              canViewFinancialReports: serverUser.permissions?.canViewFinancialReports || false,
+              canManageUsers: serverUser.permissions?.canManageUsers || false,
+              canExportData: serverUser.permissions?.canExportData || false,
+              canViewOptionalFields: serverUser.permissions?.canViewOptionalFields || true
+            }
+          }
+          
+          console.log('✅ Authenticated via server:', user.username)
+          onLogin(user)
+          return
+        }
+      }
+      
       // Add UX delay for better user feedback
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Try async authentication first (for cross-device sync)
+      // Fallback to local authentication
       let user = await authenticateUserAsync(formData.username, formData.password)
       
-      // Fallback to regular authentication if async fails
       if (!user) {
         user = authenticateUser(formData.username, formData.password)
       }
