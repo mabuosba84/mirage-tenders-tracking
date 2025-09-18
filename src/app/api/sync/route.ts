@@ -52,8 +52,50 @@ export async function POST(request: NextRequest) {
     // Update storage with received data
     if (requestData) {
       if (Array.isArray(requestData.tenders)) {
-        currentData.tenders = requestData.tenders;
-        console.log('💾 POST /api/sync - Updated tenders in persistent storage:', currentData.tenders.length);
+        // Server-side permission validation for tender updates
+        const currentUser = requestData.currentUser;
+        if (!currentUser) {
+          return NextResponse.json({ 
+            error: 'Authorization required',
+            message: 'User authentication required for tender updates',
+            timestamp: new Date().toISOString()
+          }, { status: 401 });
+        }
+
+        // Validate each tender edit permission
+        const validatedTenders = [];
+        const originalTenders = currentData.tenders;
+        
+        for (const incomingTender of requestData.tenders) {
+          const existingTender = originalTenders.find(t => t.id === incomingTender.id);
+          
+          // If it's a new tender, allow creation
+          if (!existingTender) {
+            validatedTenders.push(incomingTender);
+            continue;
+          }
+          
+          // For existing tenders, check permissions
+          const canEdit = currentUser.role === 'admin' || currentUser.username === existingTender.addedBy;
+          
+          if (canEdit) {
+            // Preserve the original addedBy and createdAt when editing
+            validatedTenders.push({
+              ...incomingTender,
+              addedBy: existingTender.addedBy,
+              createdAt: existingTender.createdAt,
+              lastEditedBy: currentUser.username,
+              lastEditedAt: new Date().toISOString()
+            });
+          } else {
+            // Keep the original tender unchanged if user lacks permission
+            validatedTenders.push(existingTender);
+            console.warn(`⚠️ User ${currentUser.username} attempted to edit tender ${incomingTender.id} owned by ${existingTender.addedBy}`);
+          }
+        }
+        
+        currentData.tenders = validatedTenders;
+        console.log('💾 POST /api/sync - Updated tenders with permission validation:', currentData.tenders.length);
       }
       
       if (Array.isArray(requestData.users)) {

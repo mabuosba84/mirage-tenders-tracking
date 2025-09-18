@@ -65,7 +65,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         },
         body: JSON.stringify({
           users: serverUsers,
-          tenders: currentTenders // Send current tenders instead of empty array
+          tenders: currentTenders, // Send current tenders instead of empty array
+          currentUser: user // Include current user for permission validation
         }),
       })
       
@@ -147,7 +148,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         },
         body: JSON.stringify({
           users: serverUsers,
-          tenders: tenderData // Send complete tender data
+          tenders: tenderData, // Send complete tender data
+          currentUser: user // Include current user for permission validation
         }),
       })
       

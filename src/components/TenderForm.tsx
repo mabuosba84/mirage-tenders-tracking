@@ -14,6 +14,30 @@ interface TenderFormProps {
 }
 
 export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderFormProps) {
+  // Security check: Users can only edit their own tenders (unless admin)
+  const canEditThisTender = !tender || user.role === 'admin' || user.username === tender.addedBy
+  
+  // If user doesn't have permission to edit this tender, show access denied
+  if (tender && !canEditThisTender) {
+    return (
+      <div className="bg-white rounded-lg shadow-lg p-6">
+        <div className="flex items-center space-x-3 text-red-600 mb-4">
+          <Shield className="h-6 w-6" />
+          <h3 className="text-lg font-semibold">Access Denied</h3>
+        </div>
+        <p className="text-gray-600 mb-4">
+          You can only edit tenders that you created. This tender was created by <strong>{tender.addedBy}</strong>.
+        </p>
+        <button
+          onClick={onCancel}
+          className="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 transition-colors"
+        >
+          Go Back
+        </button>
+      </div>
+    )
+  }
+
   // Helper function to safely convert dates to ISO string
   const safeToISOString = (dateValue: any): string => {
     if (!dateValue) return ''

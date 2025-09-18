@@ -376,7 +376,8 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
-                        {currentUser.permissions?.canEditTenders && (
+                        {/* Users can only edit their own tenders, admins can edit any tender */}
+                        {(currentUser.role === 'admin' || currentUser.username === tender.addedBy) && (
                           <button
                             onClick={() => onEdit(tender)}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50"
