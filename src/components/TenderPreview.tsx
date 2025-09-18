@@ -737,7 +737,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                 <Calendar className="h-5 w-5 text-orange-600" />
                 <h3 className="font-semibold text-gray-900">Price Request Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.dateOfPriceRequestToHp)}</p>
+              <p className="text-gray-700">{formatDate(tender.dateOfPriceRequestToVendor)}</p>
             </div>
 
             {/* Price Received Date */}
@@ -746,14 +746,14 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                 <Calendar className="h-5 w-5 text-green-600" />
                 <h3 className="font-semibold text-gray-900">Price Received Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.dateOfPriceReceivedFromHp)}</p>
+              <p className="text-gray-700">{formatDate(tender.dateOfPriceReceivedFromVendor)}</p>
             </div>
 
 
           </div>
 
           {/* Response Time Analysis */}
-          {(tender.dateOfPriceRequestToHp || tender.dateOfPriceReceivedFromHp) && (
+          {(tender.dateOfPriceRequestToVendor || tender.dateOfPriceReceivedFromVendor) && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center space-x-2 mb-3">
                 <Clock className="h-5 w-5 text-blue-600" />
@@ -783,7 +783,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                   <p className="text-sm text-gray-600">Days Elapsed</p>
                   <p className="font-semibold text-gray-900">
                     {tender.responseTimeInDays !== null ? `${tender.responseTimeInDays} days` : 
-                      tender.dateOfPriceRequestToHp ? `${Math.ceil((new Date().getTime() - new Date(tender.dateOfPriceRequestToHp).getTime()) / (1000 * 3600 * 24))} days pending` : 'N/A'}
+                      tender.dateOfPriceRequestToVendor ? `${Math.ceil((new Date().getTime() - new Date(tender.dateOfPriceRequestToVendor).getTime()) / (1000 * 3600 * 24))} days pending` : 'N/A'}
                   </p>
                 </div>
               </div>
@@ -791,14 +791,14 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           )}
 
           {/* Financial Information */}
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${user.permissions?.canViewCostFromHP ? 'lg:grid-cols-4' : 'lg:grid-cols-2'} gap-4`}>
-            {user.permissions?.canViewCostFromHP && (
+          <div className={`grid grid-cols-1 md:grid-cols-2 ${user.permissions?.canViewCostFromVendor ? 'lg:grid-cols-4' : 'lg:grid-cols-2'} gap-4`}>
+            {user.permissions?.canViewCostFromVendor && (
               <div className="bg-green-50 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <DollarSign className="h-5 w-5 text-green-600" />
-                  <h3 className="font-semibold text-gray-900">Cost from HP</h3>
+                  <h3 className="font-semibold text-gray-900">Cost from Vendor</h3>
                 </div>
-                <p className="text-lg font-bold text-green-700">{formatCurrency(tender.costFromHP)}</p>
+                <p className="text-lg font-bold text-green-700">{formatCurrency(tender.costFromVendor)}</p>
               </div>
             )}
 
@@ -828,21 +828,21 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
               </div>
             )}
 
-            {user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice && (
+            {user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice && (
               <div className="bg-yellow-50 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <DollarSign className="h-5 w-5 text-yellow-600" />
                   <h3 className="font-semibold text-gray-900">Estimated Profit</h3>
                 </div>
                 <p className="text-lg font-bold text-yellow-700">
-                  {tender.costFromHP && tender.sellingPrice 
-                    ? formatCurrency(tender.sellingPrice - tender.costFromHP)
+                  {tender.costFromVendor && tender.sellingPrice 
+                    ? formatCurrency(tender.sellingPrice - tender.costFromVendor)
                     : 'Not calculated'}
                 </p>
               </div>
             )}
 
-            {(!user.permissions?.canViewCostFromHP && !user.permissions?.canViewSellingPrice && !user.permissions?.canViewProfitMargin) && (
+            {(!user.permissions?.canViewCostFromVendor && !user.permissions?.canViewSellingPrice && !user.permissions?.canViewProfitMargin) && (
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <Shield className="h-5 w-5 text-gray-600" />
@@ -879,7 +879,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost from HP (JD)</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost from Vendor (JD)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (JD)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit Margin (%)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
@@ -891,7 +891,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.quantity}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {user.permissions?.canViewCostFromHP ? (item.costFromHP ? `${item.costFromHP.toLocaleString()} JOD` : 'N/A') : 'N/A'}
+                          {user.permissions?.canViewCostFromVendor ? (item.costFromVendor ? `${item.costFromVendor.toLocaleString()} JOD` : 'N/A') : 'N/A'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {user.permissions?.canViewSellingPrice ? (item.sellingPrice ? `${item.sellingPrice.toLocaleString()} JOD` : 'N/A') : 'N/A'}

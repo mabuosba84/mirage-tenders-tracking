@@ -16,7 +16,7 @@ export const getDefaultUsers = (): User[] => [
     updatedAt: new Date('2025-09-11'),
     createdBy: 'system',
     permissions: {
-      canViewCostFromHP: true,
+      canViewCostFromVendor: true,
       canViewSellingPrice: true,
       canViewProfitMargin: true,
       canViewTenderItems: true,
@@ -40,7 +40,7 @@ export const getDefaultUsers = (): User[] => [
     updatedAt: new Date('2025-09-10'),
     createdBy: 'admin',
     permissions: {
-      canViewCostFromHP: false,
+      canViewCostFromVendor: false,
       canViewSellingPrice: true,
       canViewProfitMargin: false,
       canViewTenderItems: true,
@@ -138,7 +138,7 @@ export const deleteUser = (userId: string) => {
 // Ensure user has complete permissions structure
 const ensureUserPermissions = (user: User): User => {
   const defaultPermissions = {
-    canViewCostFromHP: user.role === 'admin',
+    canViewCostFromVendor: user.role === 'admin',
     canViewSellingPrice: true,
     canViewProfitMargin: user.role === 'admin',
     canViewTenderItems: true,

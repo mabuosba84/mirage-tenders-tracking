@@ -1,8 +1,8 @@
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 import { formatResponseTime } from '@/utils/dateCalculations'
 
 // Generate a PDF preview for a single tender
-export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
+export const generateTenderPreviewPDF = async (tender: Lead, user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -69,8 +69,8 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
       ['Tender Announcement Date:', formatDate(tender.tenderAnnouncementDate)],
       ['Request Date:', formatDate(tender.requestDate)],
       ['Submission Date:', formatDate(tender.submissionDate)],
-      ['Price Request to HP:', formatDate(tender.dateOfPriceRequestToHp)],
-      ['Price Received from HP:', formatDate(tender.dateOfPriceReceivedFromHp)]
+      ['Price Request to Vendor:', formatDate(tender.dateOfPriceRequestToVendor)],
+      ['Price Received from Vendor:', formatDate(tender.dateOfPriceReceivedFromVendor)]
     ]
     
     timelineData.forEach(([label, value]) => {
@@ -111,10 +111,10 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
     doc.setTextColor(0, 0, 0)
     
     const financialData = [
-      ['Cost from HP:', formatCurrency(tender.costFromHP)],
+      ['Cost from Vendor:', formatCurrency(tender.costFromVendor)],
       ['Selling Price:', formatCurrency(tender.sellingPrice)],
       ['Profit Margin:', tender.profitMargin !== null ? `${tender.profitMargin.toFixed(1)}%` : 'Not calculated'],
-      ['Estimated Profit:', tender.costFromHP && tender.sellingPrice ? formatCurrency(tender.sellingPrice - tender.costFromHP) : 'Not calculated']
+      ['Estimated Profit:', tender.costFromVendor && tender.sellingPrice ? formatCurrency(tender.sellingPrice - tender.costFromVendor) : 'Not calculated']
     ]
     
     financialData.forEach(([label, value]) => {

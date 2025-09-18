@@ -45,7 +45,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
     role: 'user',
     isActive: true,
     permissions: {
-      canViewCostFromHP: false,
+      canViewCostFromVendor: false,
       canViewSellingPrice: true,
       canViewProfitMargin: false,
       canViewTenderItems: true,
@@ -108,7 +108,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       role: 'user',
       isActive: true,
       permissions: {
-        canViewCostFromHP: false,
+        canViewCostFromVendor: false,
         canViewSellingPrice: true,
         canViewProfitMargin: false,
         canViewTenderItems: true,
@@ -392,7 +392,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
     
     // Ensure complete permissions object
     const safePermissions = {
-      canViewCostFromHP: user.permissions?.canViewCostFromHP ?? false,
+      canViewCostFromVendor: user.permissions?.canViewCostFromVendor ?? false,
       canViewSellingPrice: user.permissions?.canViewSellingPrice ?? true,
       canViewProfitMargin: user.permissions?.canViewProfitMargin ?? false,
       canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
@@ -784,16 +784,16 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
                       <div className="flex items-center space-x-2">
                         <input
                           type="checkbox"
-                          id="canViewCostFromHP"
-                          checked={userForm.permissions.canViewCostFromHP}
+                          id="canViewCostFromVendor"
+                          checked={userForm.permissions.canViewCostFromVendor}
                           onChange={(e) => setUserForm(prev => ({ 
                             ...prev, 
-                            permissions: { ...prev.permissions, canViewCostFromHP: e.target.checked }
+                            permissions: { ...prev.permissions, canViewCostFromVendor: e.target.checked }
                           }))}
                           className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <label htmlFor="canViewCostFromHP" className="text-sm text-gray-700">
-                          Can view Cost from HP
+                        <label htmlFor="canViewCostFromVendor" className="text-sm text-gray-700">
+                          Can view Cost from Vendor
                         </label>
                       </div>
                       

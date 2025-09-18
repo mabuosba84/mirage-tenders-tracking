@@ -1,8 +1,8 @@
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 import { formatResponseTime } from '@/utils/dateCalculations'
 
 // This function will be loaded dynamically on the client side
-export const generateSummaryReport = async (filteredTenders: Tender[], user: User) => {
+export const generateSummaryReport = async (filteredTenders: Lead[], user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -42,7 +42,7 @@ export const generateSummaryReport = async (filteredTenders: Tender[], user: Use
       ? (tendersWithResponseTime.reduce((sum, t) => sum + (t.responseTimeInDays || 0), 0) / tendersWithResponseTime.length).toFixed(1)
       : 'N/A'
     const fastResponses = tendersWithResponseTime.filter(t => (t.responseTimeInDays || 0) <= 1).length
-    const pendingResponses = filteredTenders.filter(t => t.dateOfPriceRequestToHp && !t.dateOfPriceReceivedFromHp).length
+    const pendingResponses = filteredTenders.filter(t => t.dateOfPriceRequestToVendor && !t.dateOfPriceReceivedFromVendor).length
     
     doc.setFontSize(12)
     doc.setTextColor(40, 44, 52)
@@ -100,7 +100,7 @@ export const generateSummaryReport = async (filteredTenders: Tender[], user: Use
 }
 
 // Generate a PDF preview for a single tender
-export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
+export const generateTenderPreviewPDF = async (tender: Lead, user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -167,8 +167,8 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
       ['Tender Announcement Date:', formatDate(tender.tenderAnnouncementDate)],
       ['Request Date:', formatDate(tender.requestDate)],
       ['Submission Date:', formatDate(tender.submissionDate)],
-      ['Price Request to HP:', formatDate(tender.dateOfPriceRequestToHp)],
-      ['Price Received from HP:', formatDate(tender.dateOfPriceReceivedFromHp)]
+      ['Price Request to Vendor:', formatDate(tender.dateOfPriceRequestToVendor)],
+      ['Price Received from Vendor:', formatDate(tender.dateOfPriceReceivedFromVendor)]
     ]
     
     timelineData.forEach(([label, value]) => {
@@ -210,11 +210,11 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
     
     const financialData: string[][] = []
     
-    // Add Cost from HP if user has permission
-    if (user.permissions?.canViewCostFromHP) {
-      financialData.push(['Cost from HP:', formatCurrency(tender.costFromHP)])
+    // Add Cost from Vendor if user has permission
+    if (user.permissions?.canViewCostFromVendor) {
+      financialData.push(['Cost from Vendor:', formatCurrency(tender.costFromVendor)])
     } else {
-      financialData.push(['Cost from HP:', 'Restricted - Limited permissions'])
+      financialData.push(['Cost from Vendor:', 'Restricted - Limited permissions'])
     }
     
     // Add Selling Price if user has permission
@@ -232,8 +232,8 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
     }
     
     // Add Estimated Profit if user has both cost and selling price permissions
-    if (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) {
-      financialData.push(['Estimated Profit:', tender.costFromHP && tender.sellingPrice ? formatCurrency(tender.sellingPrice - tender.costFromHP) : 'Not calculated'])
+    if (user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice) {
+      financialData.push(['Estimated Profit:', tender.costFromVendor && tender.sellingPrice ? formatCurrency(tender.sellingPrice - tender.costFromVendor) : 'Not calculated'])
     } else {
       financialData.push(['Estimated Profit:', 'Restricted - Limited permissions'])
     }
@@ -294,7 +294,7 @@ export const generateTenderPreviewPDF = async (tender: Tender, user: User) => {
 }
 
 // Generate Detailed Report
-export const generateDetailedReport = async (filteredTenders: Tender[], user: User) => {
+export const generateDetailedReport = async (filteredTenders: Lead[], user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -330,8 +330,8 @@ export const generateDetailedReport = async (filteredTenders: Tender[], user: Us
     if (user.permissions?.canViewSellingPrice) {
       headers.push('Selling Price')
     }
-    if (user.permissions?.canViewCostFromHP) {
-      headers.push('Cost from HP')
+    if (user.permissions?.canViewCostFromVendor) {
+      headers.push('Cost from Vendor')
     }
     if (user.permissions?.canViewProfitMargin) {
       headers.push('Profit Margin')
@@ -350,8 +350,8 @@ export const generateDetailedReport = async (filteredTenders: Tender[], user: Us
         row.push(formatCurrency(tender.sellingPrice))
       }
       
-      if (user.permissions?.canViewCostFromHP) {
-        row.push(formatCurrency(tender.costFromHP))
+      if (user.permissions?.canViewCostFromVendor) {
+        row.push(formatCurrency(tender.costFromVendor))
       }
       
       if (user.permissions?.canViewProfitMargin) {
@@ -385,7 +385,7 @@ export const generateDetailedReport = async (filteredTenders: Tender[], user: Us
 }
 
 // Generate Financial Report
-export const generateFinancialReport = async (filteredTenders: Tender[], user: User) => {
+export const generateFinancialReport = async (filteredTenders: Lead[], user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -395,7 +395,7 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
     const doc = new jsPDF()
     
     // Check permissions first
-    const hasAnyFinancialPermission = user.permissions?.canViewCostFromHP || 
+    const hasAnyFinancialPermission = user.permissions?.canViewCostFromVendor || 
                                       user.permissions?.canViewSellingPrice || 
                                       user.permissions?.canViewProfitMargin
     
@@ -437,10 +437,10 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
     const totalRevenue = user.permissions?.canViewSellingPrice ? 
       wonTenders.reduce((sum, t) => sum + (t.sellingPrice || 0), 0) : 0
       
-    const totalCost = user.permissions?.canViewCostFromHP ? 
-      wonTenders.reduce((sum, t) => sum + (t.costFromHP || 0), 0) : 0
+    const totalCost = user.permissions?.canViewCostFromVendor ? 
+      wonTenders.reduce((sum, t) => sum + (t.costFromVendor || 0), 0) : 0
       
-    const totalProfit = (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) ? 
+    const totalProfit = (user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice) ? 
       totalRevenue - totalCost : 0
     doc.text(`Won Tenders: ${wonTenders.length}`, 20, 55)
     
@@ -449,11 +449,11 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
       doc.text(`Total Revenue: ${totalRevenue.toLocaleString()} JD`, 20, yPos)
       yPos += 5
     }
-    if (user.permissions?.canViewCostFromHP) {
+    if (user.permissions?.canViewCostFromVendor) {
       doc.text(`Total Cost: ${totalCost.toLocaleString()} JD`, 20, yPos)
       yPos += 5
     }
-    if (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) {
+    if (user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice) {
       doc.text(`Total Profit: ${totalProfit.toLocaleString()} JD`, 20, yPos)
       yPos += 5
     }
@@ -467,8 +467,8 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
     // Build headers based on permissions
     const headers = ['Customer']
     if (user.permissions?.canViewSellingPrice) headers.push('Selling Price')
-    if (user.permissions?.canViewCostFromHP) headers.push('Cost from HP')
-    if (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) headers.push('Profit')
+    if (user.permissions?.canViewCostFromVendor) headers.push('Cost from Vendor')
+    if (user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice) headers.push('Profit')
     if (user.permissions?.canViewProfitMargin) headers.push('Margin %')
     
     // Build table body based on permissions
@@ -478,12 +478,12 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
       if (user.permissions?.canViewSellingPrice) {
         row.push(formatCurrency(tender.sellingPrice))
       }
-      if (user.permissions?.canViewCostFromHP) {
-        row.push(formatCurrency(tender.costFromHP))
+      if (user.permissions?.canViewCostFromVendor) {
+        row.push(formatCurrency(tender.costFromVendor))
       }
-      if (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) {
-        row.push(tender.costFromHP && tender.sellingPrice ? 
-          formatCurrency(tender.sellingPrice - tender.costFromHP) : 'N/A')
+      if (user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice) {
+        row.push(tender.costFromVendor && tender.sellingPrice ? 
+          formatCurrency(tender.sellingPrice - tender.costFromVendor) : 'N/A')
       }
       if (user.permissions?.canViewProfitMargin) {
         row.push(tender.profitMargin !== null ? `${tender.profitMargin.toFixed(1)}%` : 'N/A')
@@ -516,7 +516,7 @@ export const generateFinancialReport = async (filteredTenders: Tender[], user: U
 }
 
 // Generate Response Time Report
-export const generateResponseTimeReport = async (filteredTenders: Tender[], user: User) => {
+export const generateResponseTimeReport = async (filteredTenders: Lead[], user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
@@ -553,11 +553,11 @@ export const generateResponseTimeReport = async (filteredTenders: Tender[], user
     
     // Response time table
     const body = filteredTenders
-      .filter(tender => tender.dateOfPriceRequestToHp)
+      .filter(tender => tender.dateOfPriceRequestToVendor)
       .map(tender => [
         tender.customerName,
-        tender.dateOfPriceRequestToHp ? new Date(tender.dateOfPriceRequestToHp).toLocaleDateString() : 'N/A',
-        tender.dateOfPriceReceivedFromHp ? new Date(tender.dateOfPriceReceivedFromHp).toLocaleDateString() : 'Pending',
+        tender.dateOfPriceRequestToVendor ? new Date(tender.dateOfPriceRequestToVendor).toLocaleDateString() : 'N/A',
+        tender.dateOfPriceReceivedFromVendor ? new Date(tender.dateOfPriceReceivedFromVendor).toLocaleDateString() : 'Pending',
         tender.responseTimeInDays !== null ? `${tender.responseTimeInDays} days` : 'Pending'
       ])
     

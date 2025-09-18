@@ -18,7 +18,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   const safeUser = {
     ...user,
     permissions: {
-      canViewCostFromHP: true,
+      canViewCostFromVendor: true,
       canViewSellingPrice: true,
       canViewProfitMargin: true,
       canViewTenderItems: true,
@@ -515,14 +515,14 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               </div>
 
             <div>
-              <label htmlFor="dateOfPriceRequestToHp" className="block text-sm font-medium text-gray-700 mb-2">
-                Date of Price Request to HP
+              <label htmlFor="dateOfPriceRequestToVendor" className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Price Request to Vendor
               </label>
               <input
                 type="date"
-                id="dateOfPriceRequestToHp"
-                name="dateOfPriceRequestToHp"
-                value={formData.dateOfPriceRequestToHp}
+                id="dateOfPriceRequestToVendor"
+                name="dateOfPriceRequestToVendor"
+                value={formData.dateOfPriceRequestToVendor}
                 onChange={handleInputChange}
                 placeholder=""
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -530,14 +530,14 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             </div>
 
             <div>
-              <label htmlFor="dateOfPriceReceivedFromHp" className="block text-sm font-medium text-gray-700 mb-2">
-                Date of Price Received from HP
+              <label htmlFor="dateOfPriceReceivedFromVendor" className="block text-sm font-medium text-gray-700 mb-2">
+                Date of Price Received from Vendor
               </label>
               <input
                 type="date"
-                id="dateOfPriceReceivedFromHp"
-                name="dateOfPriceReceivedFromHp"
-                value={formData.dateOfPriceReceivedFromHp}
+                id="dateOfPriceReceivedFromVendor"
+                name="dateOfPriceReceivedFromVendor"
+                value={formData.dateOfPriceReceivedFromVendor}
                 onChange={handleInputChange}
                 placeholder=""
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
@@ -547,7 +547,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
           </div>
 
           {/* Response Time Display */}
-          {(formData.dateOfPriceRequestToHp || formData.dateOfPriceReceivedFromHp) && (
+          {(formData.dateOfPriceRequestToVendor || formData.dateOfPriceReceivedFromVendor) && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <div className="flex items-center space-x-2">
                 <Clock className="h-5 w-5 text-blue-600" />
@@ -573,11 +573,11 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                       </span>
                     </div>
                   </div>
-                ) : formData.dateOfPriceRequestToHp && !formData.dateOfPriceReceivedFromHp ? (
+                ) : formData.dateOfPriceRequestToVendor && !formData.dateOfPriceReceivedFromVendor ? (
                   <p className="text-sm text-amber-600">
-                    ⏳ Waiting for price response from HP (Request sent: {new Date(formData.dateOfPriceRequestToHp).toLocaleDateString()})
+                    ⏳ Waiting for price response from Vendor (Request sent: {new Date(formData.dateOfPriceRequestToVendor).toLocaleDateString()})
                   </p>
-                ) : !formData.dateOfPriceRequestToHp && formData.dateOfPriceReceivedFromHp ? (
+                ) : !formData.dateOfPriceRequestToVendor && formData.dateOfPriceReceivedFromVendor ? (
                   <p className="text-sm text-orange-600">
                     ⚠️ Price received but no request date recorded
                   </p>
@@ -599,21 +599,21 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             {/* Financial fields - always visible */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label htmlFor="costFromHP" className="block text-sm font-medium text-gray-700 mb-2">
-                  Cost from HP (JD)
+                <label htmlFor="costFromVendor" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cost from Vendor (JD)
                 </label>
                 <FormattedNumberInput
-                  value={formData.costFromHP}
-                  onChange={(value) => setFormData(prev => ({ ...prev, costFromHP: value.toString() }))}
+                  value={formData.costFromVendor}
+                  onChange={(value) => setFormData(prev => ({ ...prev, costFromVendor: value.toString() }))}
                   className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.costFromHP ? 'border-red-300' : 'border-gray-300'
+                    errors.costFromVendor ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="Enter cost"
-                  id="costFromHP"
-                  name="costFromHP"
+                  id="costFromVendor"
+                  name="costFromVendor"
                 />
-                {errors.costFromHP && (
-                  <p className="mt-1 text-sm text-red-600">{errors.costFromHP}</p>
+                {errors.costFromVendor && (
+                  <p className="mt-1 text-sm text-red-600">{errors.costFromVendor}</p>
                 )}
               </div>
 
@@ -722,11 +722,11 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Cost from HP (JD)
+                          Cost from Vendor (JD)
                         </label>
                         <FormattedNumberInput
-                          value={item.costFromHP}
-                          onChange={(value) => updateItem(item.id, 'costFromHP', value)}
+                          value={item.costFromVendor}
+                          onChange={(value) => updateItem(item.id, 'costFromVendor', value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                           
                           placeholder="Enter cost"

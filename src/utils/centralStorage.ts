@@ -1,4 +1,4 @@
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 
 // Central storage keys
 const CENTRAL_STORAGE_PREFIX = 'mirage_central_'
@@ -62,7 +62,7 @@ class CentralStorage {
     })
   }
 
-  async saveTenders(tenders: Tender[]): Promise<void> {
+  async saveTenders(tenders: Lead[]): Promise<void> {
     if (!this.db) await this.initDB()
     
     return new Promise((resolve, reject) => {
@@ -105,7 +105,7 @@ class CentralStorage {
     })
   }
 
-  async loadTenders(): Promise<Tender[]> {
+  async loadTenders(): Promise<Lead[]> {
     if (!this.db) await this.initDB()
     
     return new Promise((resolve, reject) => {
@@ -171,7 +171,7 @@ class CentralStorage {
 const centralStorage = new CentralStorage()
 
 // Enhanced storage functions that sync across domains
-export const saveTendersToStorage = async (tenders: Tender[]): Promise<void> => {
+export const saveTendersToStorage = async (tenders: Lead[]): Promise<void> => {
   try {
     console.log('🔄 Saving tenders to storage - Count:', tenders.length)
     
@@ -230,7 +230,7 @@ export const saveTendersToStorage = async (tenders: Tender[]): Promise<void> => 
   }
 }
 
-export const loadTendersFromStorage = async (): Promise<Tender[]> => {
+export const loadTendersFromStorage = async (): Promise<Lead[]> => {
   try {
     console.log('🔄 Loading tenders from all storage sources...')
     

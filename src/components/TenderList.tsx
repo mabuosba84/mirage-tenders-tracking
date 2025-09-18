@@ -241,9 +241,9 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Response Time
                   </th>
-                  {currentUser.permissions?.canViewCostFromHP && (
+                  {currentUser.permissions?.canViewCostFromVendor && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cost from HP
+                      Cost from Vendor
                     </th>
                   )}
                   {currentUser.permissions?.canViewSellingPrice && (
@@ -323,7 +323,7 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                                 {getResponseTimeStatus(tender.responseTimeInDays).status}
                               </div>
                             </div>
-                          ) : tender.dateOfPriceRequestToHp && !tender.dateOfPriceReceivedFromHp ? (
+                          ) : tender.dateOfPriceRequestToVendor && !tender.dateOfPriceReceivedFromVendor ? (
                             <div>
                               <span className="text-sm text-amber-600">Pending</span>
                               <div className="text-xs text-gray-500">Awaiting response</div>
@@ -334,9 +334,9 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                         </div>
                       </div>
                     </td>
-                    {currentUser.permissions?.canViewCostFromHP && (
+                    {currentUser.permissions?.canViewCostFromVendor && (
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {formatCurrency(tender.costFromHP)}
+                        {formatCurrency(tender.costFromVendor)}
                       </td>
                     )}
                     {currentUser.permissions?.canViewSellingPrice && (

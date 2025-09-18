@@ -399,8 +399,8 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
                         {user.permissions?.canViewSellingPrice && tender.sellingPrice && (
                           <div>Selling: {formatCurrency(tender.sellingPrice)}</div>
                         )}
-                        {user.permissions?.canViewCostFromHP && tender.costFromHP && (
-                          <div>Cost: {formatCurrency(tender.costFromHP)}</div>
+                        {user.permissions?.canViewCostFromVendor && tender.costFromVendor && (
+                          <div>Cost: {formatCurrency(tender.costFromVendor)}</div>
                         )}
                         {user.permissions?.canViewProfitMargin && tender.profitMargin !== null && (
                           <div className={tender.profitMargin < 0 ? 'text-red-600' : 'text-green-600'}>
