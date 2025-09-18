@@ -14,6 +14,28 @@ interface TenderFormProps {
 }
 
 export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderFormProps) {
+  // Ensure user has proper permissions structure
+  const defaultPermissions = {
+    canViewCostFromHP: user.role === 'admin',
+    canViewSellingPrice: true,
+    canViewProfitMargin: user.role === 'admin',
+    canViewTenderItems: true,
+    canEditTenders: true,
+    canDeleteTenders: user.role === 'admin',
+    canViewFinancialReports: user.role === 'admin',
+    canManageUsers: user.role === 'admin',
+    canExportData: true,
+    canViewOptionalFields: true
+  }
+
+  const safeUser = {
+    ...user,
+    permissions: {
+      ...defaultPermissions,
+      ...user.permissions
+    }
+  }
+
   const [formData, setFormData] = useState<TenderFormData>(() => {
     if (tender) {
       return {
@@ -529,7 +551,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             </h3>
             
             {/* Hide cost from HP for users without permission */}
-            {user.permissions?.canViewCostFromHP && (
+            {safeUser.permissions.canViewCostFromHP && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                   <label htmlFor="costFromHP" className="block text-sm font-medium text-gray-700 mb-2">
@@ -602,7 +624,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             )}
 
             {/* For users without cost viewing permission, show only allowed fields */}
-            {!user.permissions?.canViewCostFromHP && (
+            {!safeUser.permissions.canViewCostFromHP && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {user.permissions?.canViewSellingPrice && (
                   <div>

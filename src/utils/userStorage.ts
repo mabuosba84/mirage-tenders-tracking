@@ -84,7 +84,9 @@ export const getAllUsers = (): User[] => {
   
   const stored = localStorage.getItem(USERS_STORAGE_KEY)
   if (stored) {
-    return JSON.parse(stored)
+    const users = JSON.parse(stored)
+    // Ensure all users have complete permissions
+    return users.map((user: User) => ensureUserPermissions(user))
   }
   
   // Initialize with default users
@@ -133,6 +135,30 @@ export const deleteUser = (userId: string) => {
   }
 }
 
+// Ensure user has complete permissions structure
+const ensureUserPermissions = (user: User): User => {
+  const defaultPermissions = {
+    canViewCostFromHP: user.role === 'admin',
+    canViewSellingPrice: true,
+    canViewProfitMargin: user.role === 'admin',
+    canViewTenderItems: true,
+    canEditTenders: true,
+    canDeleteTenders: user.role === 'admin',
+    canViewFinancialReports: user.role === 'admin',
+    canManageUsers: user.role === 'admin',
+    canExportData: true,
+    canViewOptionalFields: true
+  }
+
+  return {
+    ...user,
+    permissions: {
+      ...defaultPermissions,
+      ...user.permissions
+    }
+  }
+}
+
 export const authenticateUser = (username: string, password: string): User | null => {
   const users = getAllUsers()
   const credentials = getUserCredentials()
@@ -143,18 +169,24 @@ export const authenticateUser = (username: string, password: string): User | nul
   
   // Check password in local credentials first
   if (credentials[username] === password) {
-    // Update last login
-    user.lastLogin = new Date()
-    updateUser(user)
-    return user
+    // Update last login and ensure permissions
+    const validatedUser = ensureUserPermissions({
+      ...user,
+      lastLogin: new Date()
+    })
+    updateUser(validatedUser)
+    return validatedUser
   }
   
   // If not found in local credentials, check if user has server-stored password
   if ('password' in user && (user as any).password === password) {
-    // Update last login
-    user.lastLogin = new Date()
-    updateUser(user)
-    return user
+    // Update last login and ensure permissions
+    const validatedUser = ensureUserPermissions({
+      ...user,
+      lastLogin: new Date()
+    })
+    updateUser(validatedUser)
+    return validatedUser
   }
   
   return null

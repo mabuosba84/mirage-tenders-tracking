@@ -36,7 +36,19 @@ const globalStorage: GlobalStorage = {
       email: 'admin@miragebs.com',
       isActive: true,
       createdAt: '2024-01-01T00:00:00.000Z',
-      lastLogin: null
+      lastLogin: null,
+      permissions: {
+        canViewCostFromHP: true,
+        canViewSellingPrice: true,
+        canViewProfitMargin: true,
+        canViewTenderItems: true,
+        canEditTenders: true,
+        canDeleteTenders: true,
+        canViewFinancialReports: true,
+        canManageUsers: true,
+        canExportData: true,
+        canViewOptionalFields: true
+      }
     },
     {
       id: '2',
@@ -47,7 +59,19 @@ const globalStorage: GlobalStorage = {
       email: 'user@miragebs.com',
       isActive: true,
       createdAt: '2024-01-01T00:00:00.000Z',
-      lastLogin: null
+      lastLogin: null,
+      permissions: {
+        canViewCostFromHP: false,
+        canViewSellingPrice: true,
+        canViewProfitMargin: false,
+        canViewTenderItems: true,
+        canEditTenders: true,
+        canDeleteTenders: false,
+        canViewFinancialReports: false,
+        canManageUsers: false,
+        canExportData: true,
+        canViewOptionalFields: true
+      }
     }
   ],
   files: [],
