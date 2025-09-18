@@ -878,6 +878,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part Number</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost from Vendor (JD)</th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (JD)</th>
@@ -889,6 +890,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                     {tender.items.map((item, index) => (
                       <tr key={item.id || `${tender.id}-item-${index}`}>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.partNumber || 'N/A'}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.quantity}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           {user.permissions?.canViewCostFromVendor ? (item.costFromVendor ? `${item.costFromVendor.toLocaleString()} JOD` : 'N/A') : 'N/A'}
@@ -907,7 +909,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                   </tbody>
                   <tfoot className="bg-gray-50">
                     <tr>
-                      <td colSpan={5} className="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                      <td colSpan={6} className="px-6 py-3 text-right text-sm font-medium text-gray-900">
                         Total Items Value:
                       </td>
                       <td className="px-6 py-3 text-sm font-bold text-gray-900">

@@ -88,6 +88,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
     const newItem: LeadItem = {
       id: Date.now().toString(),
       description: '',
+      partNumber: '',
       quantity: 1,
       costFromVendor: 0,
       sellingPrice: 0,
@@ -693,7 +694,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                       <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Description
@@ -705,6 +706,18 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Enter item description"
                           
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Part Number
+                        </label>
+                        <input
+                          type="text"
+                          value={item.partNumber}
+                          onChange={(e) => updateItem(item.id, 'partNumber', e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Enter part number"
                         />
                       </div>
                       <div>

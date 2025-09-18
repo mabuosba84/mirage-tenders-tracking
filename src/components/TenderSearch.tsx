@@ -20,6 +20,7 @@ interface SearchFilters {
   dateFrom: string
   dateTo: string
   itemDescription: string
+  partNumber: string
 }
 
 export default function TenderSearch({ tenders, user, onViewDetails }: TenderSearchProps) {
@@ -31,7 +32,8 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
     addedBy: '',
     dateFrom: '',
     dateTo: '',
-    itemDescription: ''
+    itemDescription: '',
+    partNumber: ''
   })
   
   const [filteredTenders, setFilteredTenders] = useState<Lead[]>(tenders)
@@ -103,6 +105,14 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
           if (!hasMatchingItem) return false
         }
 
+        // Part number filter (Search by Part Number)
+        if (filters.partNumber) {
+          const hasMatchingPartNumber = tender.items && tender.items.some(item => 
+            item.partNumber.toLowerCase().includes(filters.partNumber.toLowerCase())
+          )
+          if (!hasMatchingPartNumber) return false
+        }
+
         return true
       })
 
@@ -127,7 +137,8 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
       addedBy: '',
       dateFrom: '',
       dateTo: '',
-      itemDescription: ''
+      itemDescription: '',
+      partNumber: ''
     })
   }
 
@@ -311,6 +322,19 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
                   value={filters.itemDescription}
                   onChange={(e) => handleFilterChange('itemDescription', e.target.value)}
                   placeholder="Search in tender items..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Part Number
+                </label>
+                <input
+                  type="text"
+                  value={filters.partNumber}
+                  onChange={(e) => handleFilterChange('partNumber', e.target.value)}
+                  placeholder="Search by part number..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>

@@ -371,6 +371,77 @@ export const generateDetailedReport = async (filteredTenders: Lead[], user: User
       styles: { fontSize: 8 }
     })
     
+    // Add item details section if any tender has items
+    const tendersWithItems = filteredTenders.filter(tender => tender.items && tender.items.length > 0)
+    if (tendersWithItems.length > 0 && user.permissions?.canViewTenderItems) {
+      let currentY = (doc as any).lastAutoTable.finalY + 20
+      
+      // Check if we need a new page
+      if (currentY > doc.internal.pageSize.height - 60) {
+        ;(doc as any).addPage()
+        currentY = 30
+      }
+      
+      doc.setFontSize(14)
+      doc.setTextColor(40, 44, 52)
+      doc.text('Tender Items Details', 20, currentY)
+      currentY += 15
+      
+      tendersWithItems.forEach((tender, tenderIndex) => {
+        // Check if we need a new page for this tender
+        if (currentY > doc.internal.pageSize.height - 100) {
+          ;(doc as any).addPage()
+          currentY = 30
+        }
+        
+        doc.setFontSize(12)
+        doc.setTextColor(74, 144, 226)
+        doc.text(`${tender.customerName} (${tender.category.join(', ')})`, 20, currentY)
+        currentY += 10
+        
+        // Items table headers
+        const itemHeaders = ['Description', 'Part Number', 'Quantity']
+        if (user.permissions?.canViewCostFromVendor) itemHeaders.push('Cost from Vendor (JD)')
+        if (user.permissions?.canViewSellingPrice) itemHeaders.push('Selling Price (JD)')
+        if (user.permissions?.canViewProfitMargin) itemHeaders.push('Profit Margin (%)')
+        itemHeaders.push('Total (JD)')
+        
+        // Items table body
+        const itemsBody = tender.items.map(item => {
+          const row = [
+            item.description || 'N/A',
+            item.partNumber || 'N/A',
+            item.quantity.toString()
+          ]
+          
+          if (user.permissions?.canViewCostFromVendor) {
+            row.push(item.costFromVendor ? item.costFromVendor.toLocaleString() : 'N/A')
+          }
+          if (user.permissions?.canViewSellingPrice) {
+            row.push(item.sellingPrice ? item.sellingPrice.toLocaleString() : 'N/A')
+          }
+          if (user.permissions?.canViewProfitMargin) {
+            row.push(item.profitMargin !== null ? `${item.profitMargin.toFixed(1)}%` : 'N/A')
+          }
+          row.push(item.totalPrice ? item.totalPrice.toLocaleString() : '0')
+          
+          return row
+        })
+        
+        autoTable(doc, {
+          startY: currentY,
+          head: [itemHeaders],
+          body: itemsBody,
+          theme: 'striped',
+          headStyles: { fillColor: [108, 117, 125], fontSize: 8 },
+          margin: { left: 20, right: 20 },
+          styles: { fontSize: 7 }
+        })
+        
+        currentY = (doc as any).lastAutoTable.finalY + 15
+      })
+    }
+    
     // Footer
     const pageHeight = doc.internal.pageSize.height
     doc.setFontSize(8)

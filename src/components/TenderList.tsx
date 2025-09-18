@@ -31,7 +31,11 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
         (tender.competitorWinningPrice && tender.competitorWinningPrice.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tender.opg && tender.opg.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tender.iq && tender.iq.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (tender.notes && tender.notes.toLowerCase().includes(searchTerm.toLowerCase()))
+        (tender.notes && tender.notes.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        tender.items.some(item => 
+          item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.partNumber.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       
       const matchesStatus = statusFilter === 'all' || tender.tenderStatus === statusFilter
       const matchesCategory = categoryFilter === 'all' || tender.category.includes(categoryFilter as 'PSG' | 'IPG' | 'Software' | 'Poly')

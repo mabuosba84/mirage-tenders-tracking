@@ -45,6 +45,7 @@ export interface PasswordResetData {
 export interface LeadItem {
   id: string
   description: string
+  partNumber: string
   quantity: number
   costFromVendor: number
   sellingPrice: number
