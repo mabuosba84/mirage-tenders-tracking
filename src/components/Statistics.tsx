@@ -145,26 +145,26 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
       <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Dashboard Overview</h2>
         <p className="text-gray-600">
-          Monitor your tender performance and track key metrics
+          Monitor your lead performance and track key metrics
         </p>
       </div>
 
       {/* Statistics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
-          title="Total Tenders"
+          title="Total Leads"
           value={stats.totalTenders}
           icon={Award}
           color="blue"
         />
         <StatCard
-          title="Won Tenders"
+          title="Won Leads"
           value={stats.wonTenders}
           icon={TrendingUp}
           color="green"
         />
         <StatCard
-          title="Lost Tenders"
+          title="Lost Leads"
           value={stats.lostTenders}
           icon={TrendingDown}
           color="red"

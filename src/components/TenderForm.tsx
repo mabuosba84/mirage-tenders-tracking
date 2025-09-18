@@ -694,8 +694,8 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                      <div className="md:col-span-2">
+                    <div className="grid grid-cols-1 md:grid-cols-12 lg:grid-cols-12 gap-4">
+                      <div className="md:col-span-4 lg:col-span-3">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Description
                         </label>
@@ -708,7 +708,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-2 lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Part Number
                         </label>
@@ -720,7 +720,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           placeholder="Enter part number"
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-1 lg:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Quantity
                         </label>
@@ -733,7 +733,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-2 lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Cost from Vendor (JD)
                         </label>
@@ -745,7 +745,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           placeholder="Enter cost"
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-2 lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Selling Price (JD)
                         </label>
@@ -757,7 +757,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           placeholder="Enter selling price"
                         />
                       </div>
-                      <div>
+                      <div className="md:col-span-1 lg:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Profit Margin (%)
                         </label>

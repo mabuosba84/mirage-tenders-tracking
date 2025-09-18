@@ -81,7 +81,7 @@ export default function Reports({ tenders, user }: ReportsProps) {
       }
       
       if (doc) {
-        const fileName = `Mirage_Tenders_${reportType}_Report_${new Date().toISOString().split('T')[0]}.pdf`
+        const fileName = `Mirage_Leads_${reportType}_Report_${new Date().toISOString().split('T')[0]}.pdf`
         doc.save(fileName)
       }
     } catch (error) {
@@ -203,9 +203,9 @@ export default function Reports({ tenders, user }: ReportsProps) {
             </select>
             <p className="text-xs text-gray-500 mt-1">
               {reportType === 'summary' && 'Overview statistics and key metrics'}
-              {reportType === 'detailed' && 'Complete tender details and information'}
+              {reportType === 'detailed' && 'Complete lead details and information'}
               {reportType === 'financial' && 'Revenue, costs, and profit analysis'}
-              {reportType === 'responseTime' && 'HP response time analysis and trends'}
+              {reportType === 'responseTime' && 'Vendor response time analysis and trends'}
             </p>
           </div>
 
@@ -255,13 +255,13 @@ export default function Reports({ tenders, user }: ReportsProps) {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-blue-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-blue-600">{filteredTenders.length}</div>
-            <div className="text-sm text-gray-600">Total Tenders</div>
+            <div className="text-sm text-gray-600">Total Leads</div>
           </div>
           <div className="bg-green-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-green-600">
               {filteredTenders.filter(t => t.tenderStatus === 'Won').length}
             </div>
-            <div className="text-sm text-gray-600">Won Tenders</div>
+            <div className="text-sm text-gray-600">Won Leads</div>
           </div>
           <div className="bg-yellow-50 rounded-lg p-4 text-center">
             <div className="text-2xl font-bold text-yellow-600">

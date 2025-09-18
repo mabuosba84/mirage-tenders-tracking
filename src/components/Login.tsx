@@ -63,10 +63,10 @@ export default function Login({ onLogin }: LoginProps) {
           </div>
           
           <h2 className="text-3xl font-extrabold text-gray-900">
-            Mirage Tenders Tracking System
+            Mirage Offering Tracking System
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Sign in to access your tender management dashboard
+            Sign in to access your offering management dashboard
           </p>
         </div>
 
@@ -81,7 +81,7 @@ export default function Login({ onLogin }: LoginProps) {
                 name="username"
                 type="text"
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter your username"
                 value={formData.username}
                 onChange={handleInputChange}
@@ -98,7 +98,7 @@ export default function Login({ onLogin }: LoginProps) {
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   required
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
+                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
                   placeholder="Enter your password"
                   value={formData.password}
                   onChange={handleInputChange}
