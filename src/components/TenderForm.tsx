@@ -610,23 +610,20 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
           </div>
 
           {/* Items Section */}
-          {user.permissions?.canViewTenderItems ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex-1">
-                  Tender Items
-                </h3>
-                {user.permissions?.canEditTenders && (
-                  <button
-                    type="button"
-                    onClick={addItem}
-                    className="flex items-center space-x-2 px-3 py-1 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Add Item</span>
-                  </button>
-                )}
-              </div>
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex-1">
+                Tender Items
+              </h3>
+              <button
+                type="button"
+                onClick={addItem}
+                className="flex items-center space-x-2 px-3 py-1 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Item</span>
+              </button>
+            </div>
 
             {items.length === 0 ? (
               <div className="text-center py-6 text-gray-500">
@@ -639,15 +636,13 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                   <div key={item.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-sm font-medium text-gray-700">Item #{index + 1}</h4>
-                      {user.permissions?.canEditTenders && (
-                        <button
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                       <div className="md:col-span-2">
@@ -739,27 +734,10 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 )}
               </div>
             )}
-            </div>
-          ) : (
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Tender Items
-              </h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center space-x-2">
-                  <Shield className="h-5 w-5 text-gray-600" />
-                  <h3 className="font-semibold text-gray-900">Tender Items Access Restricted</h3>
-                </div>
-                <p className="text-sm text-gray-600 mt-1">
-                  You do not have permission to view tender items for this tender.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Optional Fields Section */}
-          {user.permissions?.canViewOptionalFields && (
-            <div className="space-y-6">
+          <div className="space-y-6">
               <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
                 Optional Fields
               </h3>
@@ -797,7 +775,6 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 </div>
               </div>
             </div>
-          )}
 
           {/* Notes Section */}
           <div className="space-y-6">

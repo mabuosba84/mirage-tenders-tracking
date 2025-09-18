@@ -163,8 +163,8 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
             
             if (response.ok) {
               console.log('File found on server, opening for viewing in new tab')
-              // Use the viewer endpoint for better PDF display
-              window.open(`/api/files/${attachment.id}/view`, '_blank')
+              // Direct file access instead of using view endpoint
+              window.open(`/api/files/${attachment.id}`, '_blank')
               return
             }
           } catch (error) {
