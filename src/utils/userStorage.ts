@@ -51,6 +51,54 @@ export const getDefaultUsers = (): User[] => [
       canExportData: false,
       canViewOptionalFields: true
     }
+  },
+  {
+    id: '3',
+    username: 'Basil',
+    email: 'basil@miragebs.com',
+    name: 'Basil Haddad',
+    role: 'user',
+    isActive: true,
+    lastLogin: new Date('2025-09-18T09:00:00'),
+    createdAt: new Date('2025-09-18'),
+    updatedAt: new Date('2025-09-18'),
+    createdBy: 'admin',
+    permissions: {
+      canViewCostFromVendor: false,
+      canViewSellingPrice: true,
+      canViewProfitMargin: false,
+      canViewTenderItems: true,
+      canEditTenders: true,
+      canDeleteTenders: false,
+      canViewFinancialReports: false,
+      canManageUsers: false,
+      canExportData: false,
+      canViewOptionalFields: true
+    }
+  },
+  {
+    id: '4',
+    username: 'Dina',
+    email: 'dina@miragebs.com',
+    name: 'Dina Tellawi',
+    role: 'user',
+    isActive: true,
+    lastLogin: new Date('2025-09-18T09:00:00'),
+    createdAt: new Date('2025-09-18'),
+    updatedAt: new Date('2025-09-18'),
+    createdBy: 'admin',
+    permissions: {
+      canViewCostFromVendor: false,
+      canViewSellingPrice: true,
+      canViewProfitMargin: false,
+      canViewTenderItems: true,
+      canEditTenders: true,
+      canDeleteTenders: false,
+      canViewFinancialReports: false,
+      canManageUsers: false,
+      canExportData: false,
+      canViewOptionalFields: true
+    }
   }
 ]
 
@@ -61,7 +109,9 @@ export const getUserCredentials = (): Record<string, string> => {
   const stored = localStorage.getItem('mirage_user_credentials')
   const defaultCredentials = {
     'admin': 'admin123',
-    'user': 'user123'
+    'user': 'user123',
+    'Basil': 'password123',
+    'Dina': 'password123'
   }
   
   if (stored) {
