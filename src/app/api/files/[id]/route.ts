@@ -6,60 +6,19 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  let resolvedParams: { id: string } | null = null;
-  
   try {
-    resolvedParams = await params
+    const resolvedParams = await params
     const fileId = resolvedParams.id
-    
-    console.log('=== FILE REQUEST DEBUG ===');
-    console.log('File ID:', fileId);
-    console.log('Working directory:', process.cwd());
     
     // Simple file serving from uploads directory
     const uploadsDir = path.join(process.cwd(), 'uploads');
     const filePath = path.join(uploadsDir, fileId);
     const metaPath = path.join(uploadsDir, `${fileId}.meta`);
     
-    console.log('Upload dir:', uploadsDir);
-    console.log('File path:', filePath);
-    console.log('Meta path:', metaPath);
-    
-    // Check uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      console.log('Uploads directory does not exist, creating...');
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    
-    // List files in uploads directory for debugging
-    try {
-      const files = fs.readdirSync(uploadsDir);
-      console.log('Files in uploads directory:', files);
-    } catch (error) {
-      console.log('Could not read uploads directory:', error);
-    }
-    
     // Check if file exists
     if (!fs.existsSync(filePath)) {
       console.log('File not found:', fileId);
-      
-      // Return helpful debug info instead of just "File not found"
-      const debugInfo = {
-        fileId,
-        uploadsDir,
-        filePath,
-        workingDir: process.cwd(),
-        uploadsDirExists: fs.existsSync(uploadsDir),
-        filesInUploads: fs.existsSync(uploadsDir) ? fs.readdirSync(uploadsDir) : []
-      };
-      
-      return new NextResponse(
-        `File not found. Debug info: ${JSON.stringify(debugInfo, null, 2)}`, 
-        { 
-          status: 404,
-          headers: { 'Content-Type': 'text/plain' }
-        }
-      );
+      return new NextResponse('File not found', { status: 404 });
     }
     
     // Get file metadata if available
@@ -89,18 +48,8 @@ export async function GET(
     });
     
   } catch (error) {
-    console.error('=== FILE SERVING ERROR ===');
-    console.error('Error details:', error);
-    console.error('File ID:', resolvedParams?.id);
-    console.error('Stack trace:', error instanceof Error ? error.stack : 'No stack trace');
-    
-    return new NextResponse(
-      `Internal server error: ${error instanceof Error ? error.message : 'Unknown error'}`, 
-      { 
-        status: 500,
-        headers: { 'Content-Type': 'text/plain' }
-      }
-    );
+    console.error('Error serving file:', error);
+    return new NextResponse('Internal server error', { status: 500 });
   }
 }
 export async function POST(request: NextRequest) {

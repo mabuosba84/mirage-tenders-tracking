@@ -63,19 +63,17 @@ export async function POST(request: NextRequest) {
     };
 
     // Store in local file system if in Railway/local production
-    if (isLocalEnvironment()) {
-      try {
-        const uploadsDir = ensureUploadsDir();
-        const filePath = path.join(uploadsDir, fileId);
-        const metaPath = path.join(uploadsDir, `${fileId}.meta`);
-        
-        fs.writeFileSync(filePath, buffer);
-        fs.writeFileSync(metaPath, JSON.stringify(fileMetadata, null, 2));
-        
-        console.log('File saved to local storage:', fileId);
-      } catch (error) {
-        console.error('Error saving to local storage:', error);
-      }
+    const uploadsDir = ensureUploadsDir();
+    const filePath = path.join(uploadsDir, fileId);
+    const metaPath = path.join(uploadsDir, `${fileId}.meta`);
+    
+    try {
+      fs.writeFileSync(filePath, buffer);
+      fs.writeFileSync(metaPath, JSON.stringify(fileMetadata, null, 2));
+      console.log('File saved to filesystem:', fileId, 'at', filePath);
+    } catch (error) {
+      console.error('Error saving to filesystem:', error);
+      return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
     }
     
     console.log(`File processed for storage: ${file.name} (${fileId})`)
