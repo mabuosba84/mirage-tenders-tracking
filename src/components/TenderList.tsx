@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { User, Lead } from '@/types'
 import { Edit, Trash2, Search, Filter, Calendar, DollarSign, Clock } from 'lucide-react'
 import { formatResponseTime, getResponseTimeStatus, formatNumber, formatPercentage } from '@/utils/dateCalculations'
+import { logTenderChange } from '@/utils/changeLogUtils'
 
 interface TenderListProps {
   tenders: Lead[]
@@ -379,7 +380,21 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                         {/* Users can only edit their own tenders or if they have edit permissions, admins can edit any tender */}
                         {(currentUser.permissions?.canEditTenders && (currentUser.role === 'admin' || currentUser.username === tender.addedBy)) && (
                           <button
-                            onClick={() => onEdit(tender)}
+                            onClick={async () => {
+                              try {
+                                // Log the edit access for audit trail
+                                await logTenderChange(
+                                  currentUser,
+                                  'VIEW',
+                                  tender
+                                );
+                                console.log('✅ Edit access logged successfully');
+                              } catch (logError) {
+                                console.error('❌ Failed to log edit access:', logError);
+                                // Continue with edit even if logging fails
+                              }
+                              onEdit(tender)
+                            }}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50"
                             title="Edit tender"
                           >
@@ -388,8 +403,20 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                         )}
                         {(currentUser.permissions?.canDeleteTenders && (currentUser.role === 'admin' || currentUser.username === tender.addedBy)) && (
                           <button
-                            onClick={() => {
+                            onClick={async () => {
                               if (window.confirm('Are you sure you want to delete this tender?')) {
+                                try {
+                                  // Log the deletion for audit trail
+                                  await logTenderChange(
+                                    currentUser,
+                                    'DELETE',
+                                    tender
+                                  );
+                                  console.log('✅ Delete action logged successfully');
+                                } catch (logError) {
+                                  console.error('❌ Failed to log delete action:', logError);
+                                  // Continue with deletion even if logging fails
+                                }
                                 onDelete(tender.id)
                               }
                             }}

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { User } from '@/types'
 import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X, History } from 'lucide-react'
+import { logChange } from '@/utils/changeLogUtils'
 
 interface HeaderProps {
   user: User
@@ -10,6 +11,22 @@ interface HeaderProps {
 }
 
 export default function Header({ user, onLogout, activeTab, onTabChange }: HeaderProps) {
+  const handleLogout = async () => {
+    try {
+      // Log the logout for audit trail
+      await logChange(user, 'LOGOUT', 'USER', {
+        entityId: user.id,
+        entityName: user.username
+      });
+      console.log('✅ Logout logged successfully');
+    } catch (logError) {
+      console.error('❌ Failed to log logout:', logError);
+      // Continue with logout even if logging fails
+    }
+    
+    onLogout();
+  };
+
   const [showSettings, setShowSettings] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
@@ -289,7 +306,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
             
             {/* Logout Button */}
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors border border-gray-200 hover:border-red-200"
             >
               <LogOut className="h-4 w-4" />
@@ -334,7 +351,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
               </div>
             </div>
             <button
-              onClick={onLogout}
+              onClick={handleLogout}
               className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <LogOut className="h-4 w-4" />

@@ -18,7 +18,8 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { getAllUsers, addUser, updateUser, deleteUser, resetUserPassword } from '@/utils/userStorage'
+import { createUser, updateUser, deleteUser, resetUserPassword } from '@/utils/userStorage'
+import { logUserChange, logChange } from '@/utils/changeLogUtils'
 import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
 interface UserManagementProps {
@@ -243,6 +244,19 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       // Add user to storage with password
       addUser(newUser, userForm.password)
       
+      // Log the user creation for audit trail
+      try {
+        await logUserChange(
+          currentUser,
+          'CREATE',
+          newUser
+        );
+        console.log('✅ User creation logged successfully');
+      } catch (logError) {
+        console.error('❌ Failed to log user creation:', logError);
+        // Continue even if logging fails
+      }
+      
       // Sync to centralized storage
       await syncUsersToStorage()
       
@@ -290,6 +304,20 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
 
       // Update user in storage
       updateUser(updatedUser)
+      
+      // Log the user update for audit trail
+      try {
+        await logUserChange(
+          currentUser,
+          'UPDATE',
+          updatedUser,
+          editingUser
+        );
+        console.log('✅ User update logged successfully');
+      } catch (logError) {
+        console.error('❌ Failed to log user update:', logError);
+        // Continue even if logging fails
+      }
       
       // Sync to centralized storage
       await syncUsersToStorage()
@@ -339,8 +367,26 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       // Add UX delay for better user feedback
       await new Promise(resolve => setTimeout(resolve, 500))
       
+      // Get user data before deletion for logging
+      const userToDelete = users.find(u => u.id === userId)
+      
       // Delete user from storage
       deleteUser(userId)
+      
+      // Log the user deletion for audit trail
+      if (userToDelete) {
+        try {
+          await logUserChange(
+            currentUser,
+            'DELETE',
+            userToDelete
+          );
+          console.log('✅ User deletion logged successfully');
+        } catch (logError) {
+          console.error('❌ Failed to log user deletion:', logError);
+          // Continue even if logging fails
+        }
+      }
       
       // Sync to centralized storage
       await syncUsersToStorage()

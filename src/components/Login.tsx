@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { User, LoginFormData } from '@/types'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { authenticateUser, authenticateUserAsync } from '@/utils/userStorage'
+import { logChange } from '@/utils/changeLogUtils'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -70,6 +71,19 @@ export default function Login({ onLogin }: LoginProps) {
           }
           
           console.log('✅ Authenticated via server:', user.username)
+          
+          // Log the login for audit trail
+          try {
+            await logChange(user, 'LOGIN', 'USER', {
+              entityId: user.id,
+              entityName: user.username
+            });
+            console.log('✅ Login logged successfully');
+          } catch (logError) {
+            console.error('❌ Failed to log login:', logError);
+            // Continue with login even if logging fails
+          }
+          
           onLogin(user)
           return
         }
@@ -86,6 +100,18 @@ export default function Login({ onLogin }: LoginProps) {
       }
       
       if (user) {
+        // Log the login for audit trail
+        try {
+          await logChange(user, 'LOGIN', 'USER', {
+            entityId: user.id,
+            entityName: user.username
+          });
+          console.log('✅ Login logged successfully');
+        } catch (logError) {
+          console.error('❌ Failed to log login:', logError);
+          // Continue with login even if logging fails
+        }
+        
         onLogin(user)
       } else {
         setError('Invalid username or password')

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, Lead, LeadFormData, LeadItem, LeadAttachment, FormErrors } from '@/types'
 import { Save, X, Calculator, Clock, Plus, Trash2, Upload, FileText, AlertTriangle, Shield } from 'lucide-react'
 import { calculateResponseTime, formatResponseTime, getResponseTimeStatus, formatNumberWithCommas, formatPercentage } from '@/utils/dateCalculations'
+import { logTenderChange } from '@/utils/changeLogUtils'
 import FormattedNumberInput from './FormattedNumberInput'
 
 interface TenderFormProps {
@@ -363,6 +364,20 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
 
       // Add UX delay for better user feedback
       await new Promise(resolve => setTimeout(resolve, 500))
+      
+      // Log the change for audit trail
+      try {
+        await logTenderChange(
+          user,
+          tender ? 'UPDATE' : 'CREATE',
+          newTender,
+          tender || undefined
+        );
+        console.log('✅ Change logged successfully');
+      } catch (logError) {
+        console.error('❌ Failed to log change:', logError);
+        // Don't fail the submission if logging fails
+      }
       
       onSubmit(newTender)
     } catch (error) {
