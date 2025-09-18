@@ -954,7 +954,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           <p className="text-xs text-gray-500">
                             {attachment.type === 'tender_document' ? 'Tender Document' : 
                              attachment.type === 'bank_guarantee' ? 'Bank Guarantee' : 'Tender Proposal Offer'} • 
-                            Uploaded by {attachment.uploadedBy} on {attachment.uploadedAt.toLocaleDateString()}
+                            Uploaded by {attachment.uploadedBy} on {attachment.uploadedAt ? new Date(attachment.uploadedAt).toLocaleDateString() : 'Unknown'}
                           </p>
                         </div>
                       </div>
