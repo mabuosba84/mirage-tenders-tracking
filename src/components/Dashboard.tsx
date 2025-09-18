@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, Lead } from '@/types'
 import { calculateResponseTime } from '@/utils/dateCalculations'
 import { loadTendersFromStorage, saveTendersToStorage } from '@/utils/centralStorage'
+import { getAllUsers } from '@/utils/userStorage'
 import Header from './Header'
 import TenderForm from './TenderForm'
 import TenderList from './TenderList'
@@ -27,7 +28,51 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   useEffect(() => {
     loadTenders()
+    initializeUserSync()
   }, [])
+
+  const initializeUserSync = async () => {
+    try {
+      // Sync current users to server on dashboard load
+      const currentUsers = getAllUsers()
+      const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
+      
+      // Create server-compatible user objects with passwords
+      const serverUsers = currentUsers.map(user => ({
+        ...user,
+        password: credentials[user.username] || 'defaultPassword123',
+        permissions: {
+          canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+          canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
+          canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
+          canViewTenderItems: user.permissions?.canViewTenderItems || true,
+          canEditTenders: user.permissions?.canEditTenders || true,
+          canDeleteTenders: user.permissions?.canDeleteTenders || false,
+          canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
+          canManageUsers: user.permissions?.canManageUsers || false,
+          canExportData: user.permissions?.canExportData || false,
+          canViewOptionalFields: user.permissions?.canViewOptionalFields || true
+        }
+      }))
+      
+      const response = await fetch('/api/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          users: serverUsers,
+          tenders: []
+        }),
+      })
+      
+      if (response.ok) {
+        console.log('✅ Initial user sync to server completed')
+      }
+    } catch (error) {
+      console.log('⚠️ Initial user sync failed:', error)
+    }
+  }
 
   const loadTenders = async () => {
     try {

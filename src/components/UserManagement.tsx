@@ -94,21 +94,41 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       const currentUsers = getAllUsers()
       await saveUsersToStorage(currentUsers)
       
-      // Also push directly to server API for immediate sync
+      // Also push directly to server API for immediate sync with passwords
       try {
+        const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
+        
+        // Create server-compatible user objects with passwords
+        const serverUsers = currentUsers.map(user => ({
+          ...user,
+          password: credentials[user.username] || 'defaultPassword123', // Include password for server
+          permissions: {
+            canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+            canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
+            canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
+            canViewTenderItems: user.permissions?.canViewTenderItems || true,
+            canEditTenders: user.permissions?.canEditTenders || true,
+            canDeleteTenders: user.permissions?.canDeleteTenders || false,
+            canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
+            canManageUsers: user.permissions?.canManageUsers || false,
+            canExportData: user.permissions?.canExportData || false,
+            canViewOptionalFields: user.permissions?.canViewOptionalFields || true
+          }
+        }))
+        
         const response = await fetch('/api/sync', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            users: currentUsers,
+            users: serverUsers, // Send users with passwords
             tenders: [] // We only want to sync users here
           }),
         })
         
         if (response.ok) {
-          console.log('✅ Users synced to server successfully')
+          console.log('✅ Users synced to server successfully with passwords')
         } else {
           console.log('⚠️ Server sync failed but central storage saved')
         }
