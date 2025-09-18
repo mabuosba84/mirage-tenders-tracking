@@ -1,4 +1,5 @@
 import { User } from '@/types'
+import { saveUsersToStorage, loadUsersFromStorage } from './centralStorage'
 
 const USERS_STORAGE_KEY = 'mirage_users'
 
@@ -129,8 +130,56 @@ export const setUserCredentials = (credentials: Record<string, string>) => {
   localStorage.setItem('mirage_user_credentials', JSON.stringify(updated))
 }
 
+export const getAllUsersAsync = async (): Promise<User[]> => {
+  if (typeof window === 'undefined') return getDefaultUsers()
+  
+  try {
+    // Try to load from central storage first (for cross-device sync)
+    const centralUsers = await loadUsersFromStorage()
+    if (centralUsers && centralUsers.length > 0) {
+      console.log('Loaded users from central storage:', centralUsers.length)
+      // Store in localStorage for immediate access
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(centralUsers))
+      return centralUsers.map((user: User) => ensureUserPermissions(user))
+    }
+  } catch (err) {
+    console.log('Central storage not available, using localStorage:', err)
+  }
+  
+  // Fallback to localStorage
+  const stored = localStorage.getItem(USERS_STORAGE_KEY)
+  if (stored) {
+    const users = JSON.parse(stored)
+    return users.map((user: User) => ensureUserPermissions(user))
+  }
+  
+  // Initialize with default users
+  const defaultUsers = getDefaultUsers()
+  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))
+  
+  // Save to central storage for future cross-device access
+  try {
+    await saveUsersToStorage(defaultUsers)
+    console.log('Saved default users to central storage')
+  } catch (err) {
+    console.log('Could not save to central storage:', err)
+  }
+  
+  return defaultUsers
+}
+
 export const getAllUsers = (): User[] => {
   if (typeof window === 'undefined') return getDefaultUsers()
+  
+  // Try to load from central storage first (for cross-device sync)
+  loadUsersFromStorage().then(centralUsers => {
+    if (centralUsers && centralUsers.length > 0) {
+      // Store in localStorage for immediate access
+      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(centralUsers))
+    }
+  }).catch(err => {
+    console.log('Central storage not available, using localStorage:', err)
+  })
   
   const stored = localStorage.getItem(USERS_STORAGE_KEY)
   if (stored) {
@@ -142,13 +191,25 @@ export const getAllUsers = (): User[] => {
   // Initialize with default users
   const defaultUsers = getDefaultUsers()
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))
+  
+  // Also save to central storage for cross-device access
+  saveUsersToStorage(defaultUsers).catch(err => {
+    console.log('Could not save to central storage:', err)
+  })
+  
   return defaultUsers
 }
 
 export const saveUsers = (users: User[]) => {
   if (typeof window === 'undefined') return
   
+  // Save to localStorage for immediate access
   localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
+  
+  // Also save to central storage for cross-device sync
+  saveUsersToStorage(users).catch(err => {
+    console.log('Could not save users to central storage:', err)
+  })
 }
 
 export const addUser = (user: User, password: string) => {
@@ -207,6 +268,40 @@ const ensureUserPermissions = (user: User): User => {
       ...user.permissions
     }
   }
+}
+
+export const authenticateUserAsync = async (username: string, password: string): Promise<User | null> => {
+  // First try to sync users from central storage
+  const users = await getAllUsersAsync()
+  const credentials = getUserCredentials()
+  
+  // Check if user exists and is active
+  const user = users.find(u => u.username === username && u.isActive)
+  if (!user) return null
+  
+  // Check password in local credentials first
+  if (credentials[username] === password) {
+    // Update last login and ensure permissions
+    const validatedUser = ensureUserPermissions({
+      ...user,
+      lastLogin: new Date()
+    })
+    updateUser(validatedUser)
+    return validatedUser
+  }
+  
+  // If not found in local credentials, check if user has server-stored password
+  if ('password' in user && (user as any).password === password) {
+    // Update last login and ensure permissions
+    const validatedUser = ensureUserPermissions({
+      ...user,
+      lastLogin: new Date()
+    })
+    updateUser(validatedUser)
+    return validatedUser
+  }
+  
+  return null
 }
 
 export const authenticateUser = (username: string, password: string): User | null => {

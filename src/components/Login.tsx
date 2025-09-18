@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { User, LoginFormData } from '@/types'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
-import { authenticateUser } from '@/utils/userStorage'
+import { authenticateUser, authenticateUserAsync } from '@/utils/userStorage'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -27,8 +27,13 @@ export default function Login({ onLogin }: LoginProps) {
       // Add UX delay for better user feedback
       await new Promise(resolve => setTimeout(resolve, 1000))
       
-      // Authenticate user using the user storage system
-      const user = authenticateUser(formData.username, formData.password)
+      // Try async authentication first (for cross-device sync)
+      let user = await authenticateUserAsync(formData.username, formData.password)
+      
+      // Fallback to regular authentication if async fails
+      if (!user) {
+        user = authenticateUser(formData.username, formData.password)
+      }
       
       if (user) {
         onLogin(user)
