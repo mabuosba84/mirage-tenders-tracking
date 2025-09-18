@@ -437,7 +437,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
         // Extract the file ID from the URL and use the viewer endpoint
         const fileIdMatch = attachment.url.match(/\/api\/files\/([^?\/]+)/)
         if (fileIdMatch && fileIdMatch[1]) {
-          window.open(`/api/files/${fileIdMatch[1]}/view`, '_blank')
+          window.open(`/api/files/${fileIdMatch[1]}`, '_blank')
         } else {
           // Fallback to direct URL if we can't extract the file ID
           window.open(attachment.url, '_blank')
@@ -456,7 +456,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           
           if (response.ok) {
             // Use the viewer endpoint for better display
-            window.open(`/api/files/${attachment.id}/view`, '_blank')
+            window.open(`/api/files/${attachment.id}`, '_blank')
             return
           }
         } catch (error) {
