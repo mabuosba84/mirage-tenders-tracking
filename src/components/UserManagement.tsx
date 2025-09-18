@@ -93,6 +93,28 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
     try {
       const currentUsers = getAllUsers()
       await saveUsersToStorage(currentUsers)
+      
+      // Also push directly to server API for immediate sync
+      try {
+        const response = await fetch('/api/sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            users: currentUsers,
+            tenders: [] // We only want to sync users here
+          }),
+        })
+        
+        if (response.ok) {
+          console.log('✅ Users synced to server successfully')
+        } else {
+          console.log('⚠️ Server sync failed but central storage saved')
+        }
+      } catch (apiError) {
+        console.error('API sync error (but central storage saved):', apiError)
+      }
     } catch (error) {
       console.error('Error syncing users to central storage:', error)
     }

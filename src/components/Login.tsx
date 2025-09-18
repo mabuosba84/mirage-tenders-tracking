@@ -24,6 +24,27 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
+      // First try to sync users from server
+      try {
+        const response = await fetch('/api/sync')
+        if (response.ok) {
+          const data = await response.json()
+          if (data.users && Array.isArray(data.users)) {
+            // Store synced users locally
+            localStorage.setItem('mirage_users', JSON.stringify(data.users))
+            localStorage.setItem('mirage_user_credentials', JSON.stringify({
+              'admin': 'admin123',
+              'user': 'user123',
+              'Basil': 'password123',
+              'Dina': 'password123'
+            }))
+            console.log('Synced users from server:', data.users.length)
+          }
+        }
+      } catch (syncError) {
+        console.log('Could not sync from server, using local storage:', syncError)
+      }
+      
       // Add UX delay for better user feedback
       await new Promise(resolve => setTimeout(resolve, 1000))
       
