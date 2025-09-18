@@ -112,7 +112,7 @@ export default function Login({ onLogin }: LoginProps) {
           {/* Company Logo */}
           <div className="mx-auto h-20 w-auto flex items-center justify-center bg-white rounded-lg shadow-lg p-4 mb-6">
             <img 
-              src="/mirage-logo.svg" 
+              src="/mirage-logo.png" 
               alt="Mirage Business Solutions" 
               className="h-full w-auto object-contain"
             />
