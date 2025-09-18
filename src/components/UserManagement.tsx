@@ -389,6 +389,21 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
 
   const startEditUser = (user: User) => {
     setEditingUser(user)
+    
+    // Ensure complete permissions object
+    const safePermissions = {
+      canViewCostFromHP: user.permissions?.canViewCostFromHP ?? false,
+      canViewSellingPrice: user.permissions?.canViewSellingPrice ?? true,
+      canViewProfitMargin: user.permissions?.canViewProfitMargin ?? false,
+      canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
+      canEditTenders: user.permissions?.canEditTenders ?? true,
+      canDeleteTenders: user.permissions?.canDeleteTenders ?? false,
+      canViewFinancialReports: user.permissions?.canViewFinancialReports ?? false,
+      canManageUsers: user.permissions?.canManageUsers ?? false,
+      canExportData: user.permissions?.canExportData ?? false,
+      canViewOptionalFields: user.permissions?.canViewOptionalFields ?? true
+    }
+    
     setUserForm({
       username: user.username,
       email: user.email,
@@ -397,7 +412,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       confirmPassword: '',
       role: user.role,
       isActive: user.isActive,
-      permissions: user.permissions
+      permissions: safePermissions
     })
     setShowAddUser(true)
   }

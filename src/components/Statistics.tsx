@@ -13,6 +13,23 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
   // Debug: Log received tenders
   console.log('Statistics component received tenders:', tenders.length)
   
+  // Ensure admin users have full permissions
+  const safeUser = {
+    ...user,
+    permissions: {
+      canViewCostFromHP: user.permissions?.canViewCostFromHP ?? (user.role === 'admin'),
+      canViewSellingPrice: user.permissions?.canViewSellingPrice ?? (user.role === 'admin'),
+      canViewProfitMargin: user.permissions?.canViewProfitMargin ?? (user.role === 'admin'),
+      canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
+      canEditTenders: user.permissions?.canEditTenders ?? true,
+      canDeleteTenders: user.permissions?.canDeleteTenders ?? (user.role === 'admin'),
+      canViewFinancialReports: user.permissions?.canViewFinancialReports ?? (user.role === 'admin'),
+      canManageUsers: user.permissions?.canManageUsers ?? (user.role === 'admin'),
+      canExportData: user.permissions?.canExportData ?? (user.role === 'admin'),
+      canViewOptionalFields: user.permissions?.canViewOptionalFields ?? true
+    }
+  }
+  
   const calculateStats = () => {
     const totalTenders = tenders.length
     const wonTenders = tenders.filter(t => t.tenderStatus === 'Won').length
@@ -23,21 +40,21 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
     const winRate = totalTenders > 0 ? (wonTenders / totalTenders) * 100 : 0
     
     // Revenue calculation - check selling price permission
-    const totalRevenue = user.permissions?.canViewSellingPrice ? tenders
+    const totalRevenue = safeUser.permissions?.canViewSellingPrice ? tenders
       .filter(t => t.tenderStatus === 'Won' && t.sellingPrice)
       .reduce((sum, t) => sum + (t.sellingPrice || 0), 0) : 0
     
     // Only calculate cost-related stats if user has permission
-    const totalCost = user.permissions?.canViewCostFromHP ? tenders
+    const totalCost = safeUser.permissions?.canViewCostFromHP ? tenders
       .filter(t => t.tenderStatus === 'Won' && t.costFromHP)
       .reduce((sum, t) => sum + (t.costFromHP || 0), 0) : 0
     
     // Profit calculation - requires both cost and selling price permissions
-    const totalProfit = (user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) 
+    const totalProfit = (safeUser.permissions?.canViewCostFromHP && safeUser.permissions?.canViewSellingPrice) 
       ? totalRevenue - totalCost : 0
     
     // Profit margin calculation - requires profit margin permission
-    const avgProfitMargin = user.permissions?.canViewProfitMargin ? tenders
+    const avgProfitMargin = safeUser.permissions?.canViewProfitMargin ? tenders
       .filter(t => t.profitMargin !== null)
       .reduce((sum, t, _, arr) => sum + (t.profitMargin || 0) / arr.length, 0) : 0
 
@@ -170,7 +187,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
           suffix="%"
         />
         
-        {user.permissions?.canViewSellingPrice ? (
+        {safeUser.permissions?.canViewSellingPrice ? (
           <StatCard
             title="Total Revenue"
             value={formatNumber(stats.totalRevenue)}
@@ -188,7 +205,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
           />
         )}
 
-        {(user.permissions?.canViewCostFromHP && user.permissions?.canViewSellingPrice) ? (
+        {(safeUser.permissions?.canViewCostFromHP && safeUser.permissions?.canViewSellingPrice) ? (
           <StatCard
             title="Total Profit"
             value={formatNumber(stats.totalProfit)}
@@ -206,7 +223,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
           />
         )}
 
-        {user.permissions?.canViewProfitMargin ? (
+        {safeUser.permissions?.canViewProfitMargin ? (
           <StatCard
             title="Avg Profit Margin"
             value={formatPercentage(stats.avgProfitMargin)}
