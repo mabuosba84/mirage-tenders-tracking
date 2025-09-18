@@ -42,15 +42,15 @@ export const getDefaultUsers = (): User[] => [
     createdBy: 'admin',
     permissions: {
       canViewCostFromVendor: false,
-      canViewSellingPrice: true,
+      canViewSellingPrice: false,
       canViewProfitMargin: false,
-      canViewTenderItems: true,
-      canEditTenders: true,
+      canViewTenderItems: false,
+      canEditTenders: false,
       canDeleteTenders: false,
       canViewFinancialReports: false,
       canManageUsers: false,
       canExportData: false,
-      canViewOptionalFields: true
+      canViewOptionalFields: false
     }
   },
   {
@@ -66,15 +66,15 @@ export const getDefaultUsers = (): User[] => [
     createdBy: 'admin',
     permissions: {
       canViewCostFromVendor: false,
-      canViewSellingPrice: true,
+      canViewSellingPrice: false,
       canViewProfitMargin: false,
-      canViewTenderItems: true,
-      canEditTenders: true,
+      canViewTenderItems: false,
+      canEditTenders: false,
       canDeleteTenders: false,
       canViewFinancialReports: false,
       canManageUsers: false,
       canExportData: false,
-      canViewOptionalFields: true
+      canViewOptionalFields: false
     }
   },
   {

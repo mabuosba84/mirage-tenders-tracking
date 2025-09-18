@@ -71,16 +71,16 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   const safeUser = {
     ...user,
     permissions: {
-      canViewCostFromVendor: user.permissions?.canViewCostFromVendor ?? (user.role === 'admin'),
-      canViewSellingPrice: user.permissions?.canViewSellingPrice ?? (user.role === 'admin'),
-      canViewProfitMargin: user.permissions?.canViewProfitMargin ?? (user.role === 'admin'),
-      canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
-      canEditTenders: user.permissions?.canEditTenders ?? (user.role === 'admin'),
-      canDeleteTenders: user.permissions?.canDeleteTenders ?? (user.role === 'admin'),
-      canViewFinancialReports: user.permissions?.canViewFinancialReports ?? (user.role === 'admin'),
-      canManageUsers: user.permissions?.canManageUsers ?? (user.role === 'admin'),
-      canExportData: user.permissions?.canExportData ?? (user.role === 'admin'),
-      canViewOptionalFields: user.permissions?.canViewOptionalFields ?? true
+      canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
+      canViewSellingPrice: user.permissions?.canViewSellingPrice || false,
+      canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
+      canViewTenderItems: user.permissions?.canViewTenderItems || false,
+      canEditTenders: user.permissions?.canEditTenders || false,
+      canDeleteTenders: user.permissions?.canDeleteTenders || false,
+      canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
+      canManageUsers: user.permissions?.canManageUsers || false,
+      canExportData: user.permissions?.canExportData || false,
+      canViewOptionalFields: user.permissions?.canViewOptionalFields || false
     }
   }
 
@@ -718,21 +718,22 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             </div>
           </div>
 
-          {/* Items Section */}
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex-1">
-                Tender Items
-              </h3>
-              <button
-                type="button"
-                onClick={addItem}
-                className="flex items-center space-x-2 px-3 py-1 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Add Item</span>
-              </button>
-            </div>
+          {/* Items Section - Conditional based on permissions */}
+          {safeUser.permissions?.canViewTenderItems && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2 flex-1">
+                  Tender Items
+                </h3>
+                <button
+                  type="button"
+                  onClick={addItem}
+                  className="flex items-center space-x-2 px-3 py-1 border border-blue-300 rounded-md text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Item</span>
+                </button>
+              </div>
 
             {items.length === 0 ? (
               <div className="text-center py-6 text-gray-500">
@@ -855,46 +856,49 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               </div>
             )}
           </div>
+          )}
 
-          {/* Optional Fields Section */}
-          <div className="space-y-6">
-              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
-                Optional Fields
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label htmlFor="opg" className="block text-sm font-medium text-gray-700 mb-2">
-                    OPG#
-                  </label>
-                  <input
-                    type="text"
-                    id="opg"
-                    name="opg"
-                    value={formData.opg}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter OPG number"
-                    
-                  />
-                </div>
+          {/* Optional Fields Section - Conditional based on permissions */}
+          {safeUser.permissions?.canViewOptionalFields && (
+            <div className="space-y-6">
+                <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                  Optional Fields
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label htmlFor="opg" className="block text-sm font-medium text-gray-700 mb-2">
+                      OPG#
+                    </label>
+                    <input
+                      type="text"
+                      id="opg"
+                      name="opg"
+                      value={formData.opg}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter OPG number"
+                      
+                    />
+                  </div>
 
-                <div>
-                  <label htmlFor="iq" className="block text-sm font-medium text-gray-700 mb-2">
-                    IQ#
-                  </label>
-                  <input
-                    type="text"
-                    id="iq"
-                    name="iq"
-                    value={formData.iq}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter IQ number"
-                    
-                  />
+                  <div>
+                    <label htmlFor="iq" className="block text-sm font-medium text-gray-700 mb-2">
+                      IQ#
+                    </label>
+                    <input
+                      type="text"
+                      id="iq"
+                      name="iq"
+                      value={formData.iq}
+                      onChange={handleInputChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter IQ number"
+                      
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+          )}
 
           {/* Notes Section */}
           <div className="space-y-6">

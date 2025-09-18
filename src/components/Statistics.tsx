@@ -13,20 +13,20 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
   // Debug: Log received tenders
   console.log('Statistics component received tenders:', tenders.length)
   
-  // Ensure admin users have full permissions
+  // Ensure admin users have full permissions, others use their actual permissions
   const safeUser = {
     ...user,
     permissions: {
-      canViewCostFromVendor: user.permissions?.canViewCostFromVendor ?? (user.role === 'admin'),
-      canViewSellingPrice: user.permissions?.canViewSellingPrice ?? (user.role === 'admin'),
-      canViewProfitMargin: user.permissions?.canViewProfitMargin ?? (user.role === 'admin'),
-      canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
-      canEditTenders: user.permissions?.canEditTenders ?? true,
-      canDeleteTenders: user.permissions?.canDeleteTenders ?? (user.role === 'admin'),
-      canViewFinancialReports: user.permissions?.canViewFinancialReports ?? (user.role === 'admin'),
-      canManageUsers: user.permissions?.canManageUsers ?? (user.role === 'admin'),
-      canExportData: user.permissions?.canExportData ?? (user.role === 'admin'),
-      canViewOptionalFields: user.permissions?.canViewOptionalFields ?? true
+      canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
+      canViewSellingPrice: user.permissions?.canViewSellingPrice || false,
+      canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
+      canViewTenderItems: user.permissions?.canViewTenderItems || false,
+      canEditTenders: user.permissions?.canEditTenders || false,
+      canDeleteTenders: user.permissions?.canDeleteTenders || false,
+      canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
+      canManageUsers: user.permissions?.canManageUsers || false,
+      canExportData: user.permissions?.canExportData || false,
+      canViewOptionalFields: user.permissions?.canViewOptionalFields || false
     }
   }
   

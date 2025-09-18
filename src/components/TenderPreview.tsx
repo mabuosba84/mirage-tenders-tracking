@@ -648,24 +648,28 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
               <p className="text-blue-100 mt-1">Tender ID: #{tender.id}</p>
             </div>
             <div className="flex items-center space-x-2">
-              <button
-                onClick={handleExportPDF}
-                disabled={isExporting}
-                className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
-                title="Export to PDF"
-              >
-                <Download className="h-4 w-4" />
-                <span className="hidden sm:inline">Export PDF</span>
-              </button>
-              <button
-                onClick={handlePrint}
-                disabled={isExporting}
-                className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
-                title="Print"
-              >
-                <Printer className="h-4 w-4" />
-                <span className="hidden sm:inline">Print</span>
-              </button>
+              {user.permissions?.canExportData && (
+                <button
+                  onClick={handleExportPDF}
+                  disabled={isExporting}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
+                  title="Export to PDF"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Export PDF</span>
+                </button>
+              )}
+              {user.permissions?.canExportData && (
+                <button
+                  onClick={handlePrint}
+                  disabled={isExporting}
+                  className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
+                  title="Print"
+                >
+                  <Printer className="h-4 w-4" />
+                  <span className="hidden sm:inline">Print</span>
+                </button>
+              )}
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-white hover:bg-opacity-20 rounded-md transition-colors"
