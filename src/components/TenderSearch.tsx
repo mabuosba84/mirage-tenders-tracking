@@ -13,6 +13,7 @@ interface TenderSearchProps {
 
 interface SearchFilters {
   customerName: string
+  leadType: string
   category: string
   status: string
   addedBy: string
@@ -24,6 +25,7 @@ interface SearchFilters {
 export default function TenderSearch({ tenders, user, onViewDetails }: TenderSearchProps) {
   const [filters, setFilters] = useState<SearchFilters>({
     customerName: '',
+    leadType: '',
     category: '',
     status: '',
     addedBy: '',
@@ -53,6 +55,11 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
       let filtered = tenders.filter(tender => {
         // Customer Name filter
         if (filters.customerName && !tender.customerName.toLowerCase().includes(filters.customerName.toLowerCase())) {
+          return false
+        }
+
+        // Lead Type filter
+        if (filters.leadType && tender.leadType !== filters.leadType) {
           return false
         }
 
@@ -88,7 +95,7 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
           }
         }
 
-        // Item description filter
+        // Item description filter (Search by Tender Items)
         if (filters.itemDescription) {
           const hasMatchingItem = tender.items && tender.items.some(item => 
             item.description.toLowerCase().includes(filters.itemDescription.toLowerCase())
@@ -114,6 +121,7 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
   const clearAllFilters = () => {
     setFilters({
       customerName: '',
+      leadType: '',
       category: '',
       status: '',
       addedBy: '',
@@ -200,6 +208,21 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
               placeholder="Search by customer name..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Lead Type
+            </label>
+            <select
+              value={filters.leadType}
+              onChange={(e) => handleFilterChange('leadType', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">All Types</option>
+              <option value="Tender">Tender</option>
+              <option value="Quotation">Quotation</option>
+            </select>
           </div>
 
           <div>

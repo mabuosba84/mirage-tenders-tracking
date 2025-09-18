@@ -63,8 +63,8 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
 
   const navItems = [
     { id: 'overview' as const, label: 'Overview', icon: Home },
-    { id: 'add' as const, label: 'Add Tender', icon: Plus },
-    { id: 'list' as const, label: 'Tender List', icon: List },
+    { id: 'add' as const, label: 'Add Lead', icon: Plus },
+    { id: 'list' as const, label: 'Lead List', icon: List },
     { id: 'search' as const, label: 'Search', icon: Search },
     { id: 'reports' as const, label: 'Reports', icon: FileText },
     ...(user.role === 'admin' ? [{ id: 'users' as const, label: 'Users', icon: Users }] : []),

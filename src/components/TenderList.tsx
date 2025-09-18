@@ -27,6 +27,7 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
         tender.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         tender.category.some(cat => cat.toLowerCase().includes(searchTerm.toLowerCase())) ||
         tender.addedBy.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (tender.leadType && tender.leadType.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tender.competitorWinningPrice && tender.competitorWinningPrice.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tender.opg && tender.opg.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (tender.iq && tender.iq.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -227,6 +228,9 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                     Customer Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Lead Type
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Category
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -282,6 +286,15 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900">{tender.customerName}</div>
                       <div className="text-xs text-gray-500">Customer</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full border ${
+                        tender.leadType === 'Tender' 
+                          ? 'bg-blue-100 text-blue-800 border-blue-200'
+                          : 'bg-purple-100 text-purple-800 border-purple-200'
+                      }`}>
+                        {tender.leadType || 'Tender'}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">

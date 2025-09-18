@@ -64,6 +64,7 @@ export interface TenderAttachment {
 
 export interface Tender {
   id: string
+  leadType: 'Tender' | 'Quotation' // New field to distinguish between tender and quotation
   customerName: string
   category: ('PSG' | 'IPG' | 'Software' | 'Poly')[]
   tenderAnnouncementDate: Date | null
@@ -92,6 +93,7 @@ export interface Tender {
 }
 
 export interface TenderFormData {
+  leadType: 'Tender' | 'Quotation'
   customerName: string
   category: ('PSG' | 'IPG' | 'Software' | 'Poly')[]
   tenderAnnouncementDate: string

@@ -34,6 +34,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   const [formData, setFormData] = useState<TenderFormData>(() => {
     if (tender) {
       return {
+        leadType: tender.leadType || 'Tender',
         customerName: tender.customerName || '',
         category: tender.category || ['PSG'],
         tenderAnnouncementDate: tender.tenderAnnouncementDate ? tender.tenderAnnouncementDate.toISOString().split('T')[0] : '',
@@ -53,6 +54,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       }
     }
     return {
+      leadType: 'Tender',
       customerName: '',
       category: ['PSG'],
       tenderAnnouncementDate: '',
@@ -262,6 +264,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       
       const newTender: Tender = {
         id: tender?.id || Date.now().toString(),
+        leadType: formData.leadType,
         customerName: formData.customerName,
         category: formData.category,
         tenderAnnouncementDate: formData.tenderAnnouncementDate ? new Date(formData.tenderAnnouncementDate) : null,
@@ -370,6 +373,37 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               Basic Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Lead Type Selection */}
+              <div>
+                <label htmlFor="leadType" className="block text-sm font-medium text-gray-700 mb-2">
+                  Lead Type *
+                </label>
+                <div className="flex space-x-4">
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="leadType"
+                      value="Tender"
+                      checked={formData.leadType === 'Tender'}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Tender</span>
+                  </label>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="leadType"
+                      value="Quotation"
+                      checked={formData.leadType === 'Quotation'}
+                      onChange={handleInputChange}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                    />
+                    <span className="ml-2 text-sm text-gray-700">Quotation</span>
+                  </label>
+                </div>
+              </div>
+
               <div className="md:col-span-2">
                 <label htmlFor="customerName" className="block text-sm font-medium text-gray-700 mb-2">
                   Customer Name *
