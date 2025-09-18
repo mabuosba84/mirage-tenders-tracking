@@ -142,3 +142,53 @@ export interface LoginFormData {
   username: string
   password: string
 }
+
+// Change Log System Types
+export interface ChangeLogEntry {
+  id: string
+  timestamp: Date
+  userId: string
+  username: string
+  userRole: 'admin' | 'user'
+  action: ChangeLogAction
+  entity: ChangeLogEntity
+  entityId?: string
+  entityName?: string
+  changes?: ChangeLogChanges
+  ipAddress?: string
+  userAgent?: string
+  details?: string
+}
+
+export type ChangeLogAction = 
+  | 'CREATE' 
+  | 'UPDATE' 
+  | 'DELETE' 
+  | 'LOGIN' 
+  | 'LOGOUT' 
+  | 'VIEW' 
+  | 'EXPORT' 
+  | 'UPLOAD'
+  | 'DOWNLOAD'
+
+export type ChangeLogEntity = 
+  | 'TENDER' 
+  | 'USER' 
+  | 'REPORT' 
+  | 'FILE' 
+  | 'SYSTEM'
+
+export interface ChangeLogChanges {
+  before?: Record<string, any>
+  after?: Record<string, any>
+  fields?: string[]
+}
+
+export interface ChangeLogFilter {
+  startDate?: Date
+  endDate?: Date
+  userId?: string
+  action?: ChangeLogAction
+  entity?: ChangeLogEntity
+  searchTerm?: string
+}

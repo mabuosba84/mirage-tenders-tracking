@@ -13,6 +13,7 @@ import Statistics from './Statistics'
 import Reports from './Reports'
 import UserManagement from './UserManagement'
 import TenderPreview from './TenderPreview'
+import ChangeLogDashboard from './ChangeLogDashboard'
 
 interface DashboardProps {
   user: User
@@ -21,7 +22,7 @@ interface DashboardProps {
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
   const [tenders, setTenders] = useState<Lead[]>([])
-  const [activeTab, setActiveTab] = useState<'overview' | 'add' | 'list' | 'search' | 'reports' | 'users'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'add' | 'list' | 'search' | 'reports' | 'users' | 'changelog'>('overview')
   const [editingTender, setEditingTender] = useState<Lead | null>(null)
   const [viewingTender, setViewingTender] = useState<Lead | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
@@ -260,6 +261,8 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         return <Reports tenders={tenders} user={user} />
       case 'users':
         return user.role === 'admin' ? <UserManagement currentUser={user} /> : <Statistics tenders={tenders} user={user} />
+      case 'changelog':
+        return <ChangeLogDashboard currentUser={user} />
       default:
         return <Statistics tenders={tenders} user={user} />
     }

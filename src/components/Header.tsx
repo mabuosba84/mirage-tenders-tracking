@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { User } from '@/types'
-import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X } from 'lucide-react'
+import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X, History } from 'lucide-react'
 
 interface HeaderProps {
   user: User
   onLogout: () => void
-  activeTab: 'overview' | 'add' | 'list' | 'search' | 'reports' | 'users'
-  onTabChange: (tab: 'overview' | 'add' | 'list' | 'search' | 'reports' | 'users') => void
+  activeTab: 'overview' | 'add' | 'list' | 'search' | 'reports' | 'users' | 'changelog'
+  onTabChange: (tab: 'overview' | 'add' | 'list' | 'search' | 'reports' | 'users' | 'changelog') => void
 }
 
 export default function Header({ user, onLogout, activeTab, onTabChange }: HeaderProps) {
@@ -68,6 +68,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
     { id: 'search' as const, label: 'Search', icon: Search },
     { id: 'reports' as const, label: 'Reports', icon: FileText },
     ...(user.role === 'admin' ? [{ id: 'users' as const, label: 'Users', icon: Users }] : []),
+    ...(user.role === 'admin' ? [{ id: 'changelog' as const, label: 'Change Log', icon: History }] : []),
   ]
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
