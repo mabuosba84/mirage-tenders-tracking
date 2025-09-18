@@ -117,6 +117,19 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           }
         }))
         
+        // CRITICAL: Get existing tenders to prevent data loss
+        let existingTenders = []
+        try {
+          const existingDataResponse = await fetch('/api/sync', { method: 'GET' })
+          if (existingDataResponse.ok) {
+            const existingData = await existingDataResponse.json()
+            existingTenders = existingData.tenders || []
+            console.log('📥 Preserving existing tenders:', existingTenders.length)
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not fetch existing tenders, proceeding with empty array')
+        }
+        
         const response = await fetch('/api/sync', {
           method: 'POST',
           headers: {
@@ -124,7 +137,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           },
           body: JSON.stringify({
             users: serverUsers, // Send users with passwords
-            tenders: [] // We only want to sync users here
+            tenders: existingTenders // PRESERVE existing tenders instead of clearing them
           }),
         })
         
