@@ -427,7 +427,9 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                   name="tenderAnnouncementDate"
                   value={formData.tenderAnnouncementDate}
                   onChange={handleInputChange}
+                  placeholder=""
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  style={{ colorScheme: 'light' }}
                 />
               </div>
 
@@ -441,8 +443,8 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                   name="requestDate"
                   value={formData.requestDate}
                   onChange={handleInputChange}
+                  placeholder=""
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  disabled={!user.permissions?.canEditTenders || (!!formData.requestDate && user.role !== 'admin')}
                 />
               </div>
             </div>
@@ -479,7 +481,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 value={formData.dateOfPriceRequestToHp}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                disabled={!user.permissions?.canEditTenders || (!!formData.dateOfPriceRequestToHp && user.role !== 'admin')}
+                disabled={!safeUser.permissions.canEditTenders}
               />
             </div>
 
@@ -494,7 +496,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 value={formData.dateOfPriceReceivedFromHp}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                disabled={!user.permissions?.canEditTenders || (!!formData.dateOfPriceReceivedFromHp && user.role !== 'admin')}
+                disabled={!safeUser.permissions.canEditTenders}
               />
             </div>
           </div>

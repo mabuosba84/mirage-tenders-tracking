@@ -2,6 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix for date inputs to ensure they show properly */
+input[type="date"] {
+  -webkit-appearance: auto !important;
+  -moz-appearance: auto !important;
+  appearance: auto !important;
+  background-color: white !important;
+  color: #374151 !important;
+}
+
+/* Ensure date inputs are interactive */
+input[type="date"]:not(:disabled) {
+  cursor: pointer !important;
+}
+
+/* Fix for Safari date inputs */
+input[type="date"]::-webkit-datetime-edit {
+  display: block !important;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  display: block !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
