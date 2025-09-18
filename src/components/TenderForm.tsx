@@ -14,6 +14,35 @@ interface TenderFormProps {
 }
 
 export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderFormProps) {
+  // Helper function to safely convert dates to ISO string
+  const safeToISOString = (dateValue: any): string => {
+    if (!dateValue) return ''
+    
+    // If it's already a string, check if it's a valid date string
+    if (typeof dateValue === 'string') {
+      // If it's already in YYYY-MM-DD format, return as is
+      if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+        return dateValue
+      }
+      // Try to parse as date
+      const parsed = new Date(dateValue)
+      return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0]
+    }
+    
+    // If it's a Date object
+    if (dateValue instanceof Date) {
+      return isNaN(dateValue.getTime()) ? '' : dateValue.toISOString().split('T')[0]
+    }
+    
+    // Try to convert to Date
+    try {
+      const parsed = new Date(dateValue)
+      return isNaN(parsed.getTime()) ? '' : parsed.toISOString().split('T')[0]
+    } catch {
+      return ''
+    }
+  }
+
   // Simplified user - no complex permission checks
   const safeUser = {
     ...user,
@@ -37,19 +66,19 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         leadType: tender.leadType || 'Tender',
         customerName: tender.customerName || '',
         category: tender.category || ['PSG'],
-        tenderAnnouncementDate: tender.tenderAnnouncementDate ? tender.tenderAnnouncementDate.toISOString().split('T')[0] : '',
-        requestDate: tender.requestDate ? tender.requestDate.toISOString().split('T')[0] : '',
-        submissionDate: tender.submissionDate ? tender.submissionDate.toISOString().split('T')[0] : '',
-        dateOfPriceRequestToVendor: tender.dateOfPriceRequestToVendor ? tender.dateOfPriceRequestToVendor.toISOString().split('T')[0] : '',
-        dateOfPriceReceivedFromVendor: tender.dateOfPriceReceivedFromVendor ? tender.dateOfPriceReceivedFromVendor.toISOString().split('T')[0] : '',
+        tenderAnnouncementDate: safeToISOString(tender.tenderAnnouncementDate),
+        requestDate: safeToISOString(tender.requestDate),
+        submissionDate: safeToISOString(tender.submissionDate),
+        dateOfPriceRequestToVendor: safeToISOString(tender.dateOfPriceRequestToVendor),
+        dateOfPriceReceivedFromVendor: safeToISOString(tender.dateOfPriceReceivedFromVendor),
         costFromVendor: tender.costFromVendor?.toString() || '',
         sellingPrice: tender.sellingPrice?.toString() || '',
         tenderStatus: tender.tenderStatus,
         lostReason: tender.lostReason || '',
         ignoredReason: tender.ignoredReason || '',
         competitorWinningPrice: tender.competitorWinningPrice || '',
-        bankGuaranteeIssueDate: tender.bankGuaranteeIssueDate ? tender.bankGuaranteeIssueDate.toISOString().split('T')[0] : '',
-        bankGuaranteeExpiryDate: tender.bankGuaranteeExpiryDate ? tender.bankGuaranteeExpiryDate.toISOString().split('T')[0] : '',
+        bankGuaranteeIssueDate: safeToISOString(tender.bankGuaranteeIssueDate),
+        bankGuaranteeExpiryDate: safeToISOString(tender.bankGuaranteeExpiryDate),
         opg: tender.opg || '',
         iq: tender.iq || '',
         notes: tender.notes || ''
