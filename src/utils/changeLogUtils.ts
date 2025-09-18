@@ -17,6 +17,8 @@ export const logChange = async (
   } = {}
 ): Promise<void> => {
   try {
+    console.log('🔄 CHANGE LOG: Starting log for', action, entity, 'by', user.username);
+    
     const logEntry = {
       userId: user.id,
       username: user.username,
@@ -29,8 +31,11 @@ export const logChange = async (
       details: options.details
     };
 
+    console.log('📝 CHANGE LOG: Prepared entry:', logEntry);
+
     // Try to send to server first
     try {
+      console.log('🌐 CHANGE LOG: Attempting server POST to /api/changelog');
       const response = await fetch('/api/changelog', {
         method: 'POST',
         headers: {
@@ -39,17 +44,22 @@ export const logChange = async (
         body: JSON.stringify(logEntry),
       });
 
+      console.log('📡 CHANGE LOG: Server response status:', response.status);
+      
       if (response.ok) {
-        console.log('✅ Change logged to server:', action, entity);
+        const responseData = await response.json();
+        console.log('✅ CHANGE LOG: Successfully logged to server:', responseData);
         return;
       } else {
-        console.warn('⚠️ Server logging failed, using local storage');
+        const errorText = await response.text();
+        console.warn('⚠️ CHANGE LOG: Server logging failed with status', response.status, ':', errorText);
       }
     } catch (serverError) {
-      console.warn('⚠️ Server logging failed, using local storage:', serverError);
+      console.warn('⚠️ CHANGE LOG: Server logging failed with error:', serverError);
     }
 
     // Fallback to localStorage
+    console.log('💾 CHANGE LOG: Falling back to localStorage');
     const logs = JSON.parse(localStorage.getItem('mirage_changelog') || '[]');
     const newEntry: ChangeLogEntry = {
       ...logEntry,
@@ -65,10 +75,10 @@ export const logChange = async (
     }
 
     localStorage.setItem('mirage_changelog', JSON.stringify(logs));
-    console.log('✅ Change logged to localStorage:', action, entity);
+    console.log('✅ CHANGE LOG: Successfully logged to localStorage. Total logs:', logs.length);
 
   } catch (error) {
-    console.error('❌ Failed to log change:', error);
+    console.error('❌ CHANGE LOG: Critical error - logging completely failed:', error);
   }
 };
 
