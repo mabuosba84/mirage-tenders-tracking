@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-import { globalStorage } from '../../../../utils/globalStorage'
 
 export async function GET(
   request: NextRequest,
@@ -11,69 +10,48 @@ export async function GET(
     const resolvedParams = await params
     const fileId = resolvedParams.id
     
-    console.log('GET file request for:', fileId);
-    
-    // For Railway deployment, prioritize persistent file storage
+    // Simple file serving from uploads directory
     const uploadsDir = path.join(process.cwd(), 'uploads');
     const filePath = path.join(uploadsDir, fileId);
     const metaPath = path.join(uploadsDir, `${fileId}.meta`);
     
-    // First try file system storage (Railway persistent)
-    if (fs.existsSync(filePath) && fs.existsSync(metaPath)) {
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.log('File not found:', fileId);
+      return new NextResponse('File not found', { status: 404 });
+    }
+    
+    // Get file metadata if available
+    let contentType = 'application/octet-stream';
+    let filename = fileId;
+    
+    if (fs.existsSync(metaPath)) {
       try {
-        const fileBuffer = fs.readFileSync(filePath);
         const metaContent = fs.readFileSync(metaPath, 'utf-8');
         const fileMeta = JSON.parse(metaContent);
-        
-        console.log('File found in persistent storage:', fileId, 'Size:', fileMeta.size);
-        
-        return new NextResponse(fileBuffer, {
-          headers: {
-            'Content-Type': fileMeta.mimetype || 'application/octet-stream',
-            'Content-Disposition': `inline; filename="${fileMeta.filename || fileId}"`,
-            'Cache-Control': 'public, max-age=3600'
-          }
-        });
+        contentType = fileMeta.mimetype || contentType;
+        filename = fileMeta.filename || filename;
       } catch (error) {
-        console.error('Error reading from persistent storage:', error);
+        console.log('Could not read metadata for:', fileId);
       }
     }
     
-    // Fallback to global storage (memory) for development/Vercel
-    console.log('Available files in global storage:', globalStorage.files.map(f => f.id));
-    const storedFile = globalStorage.files.find(f => f.id === fileId);
-    if (storedFile) {
-      const fileBuffer = Buffer.from(storedFile.data, 'base64');
-      console.log('File found in global storage:', fileId, 'Size:', storedFile.meta.size);
-      
-      return new NextResponse(fileBuffer, {
-        headers: {
-          'Content-Type': storedFile.meta.mimetype || 'application/octet-stream',
-          'Content-Disposition': `inline; filename="${storedFile.meta.filename || fileId}"`,
-          'Cache-Control': 'public, max-age=3600'
-        }
-      });
-    }
+    // Read and return file
+    const fileBuffer = fs.readFileSync(filePath);
     
-    console.log('File not found anywhere:', fileId);
-    return new NextResponse('File not found', {
-      status: 404,
+    return new NextResponse(fileBuffer, {
       headers: {
-        'Content-Type': 'text/plain'
+        'Content-Type': contentType,
+        'Content-Disposition': `inline; filename="${filename}"`,
+        'Cache-Control': 'public, max-age=86400'
       }
     });
     
   } catch (error) {
-    console.error('Error accessing file:', error)
-    return new NextResponse('Server error', {
-      status: 500,
-      headers: {
-        'Content-Type': 'text/plain'
-      }
-    });
+    console.error('Error serving file:', error);
+    return new NextResponse('Internal server error', { status: 500 });
   }
 }
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -83,9 +61,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
 
+    // Generate unique file ID
     const fileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
     const buffer = Buffer.from(await file.arrayBuffer());
     
+    // Prepare metadata
     const fileMetadata = {
       filename: file.name,
       mimetype: file.type,
@@ -93,33 +73,20 @@ export async function POST(request: NextRequest) {
       uploadedAt: new Date().toISOString()
     };
 
-    // Always store in persistent file system for Railway
+    // Create uploads directory if it doesn't exist
     const uploadsDir = path.join(process.cwd(), 'uploads');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
     
+    // Save file and metadata
     const filePath = path.join(uploadsDir, fileId);
     const metaPath = path.join(uploadsDir, `${fileId}.meta`);
     
-    try {
-      fs.writeFileSync(filePath, buffer);
-      fs.writeFileSync(metaPath, JSON.stringify(fileMetadata, null, 2));
-      console.log('File saved to persistent storage:', fileId, 'Size:', file.size);
-    } catch (error) {
-      console.error('Error saving to persistent storage:', error);
-      return NextResponse.json({ error: 'Failed to save file' }, { status: 500 });
-    }
-
-    // Also store in global storage as backup (for development)
-    globalStorage.files.push({
-      id: fileId,
-      data: buffer.toString('base64'),
-      meta: fileMetadata
-    });
-    globalStorage.lastUpdated = new Date().toISOString();
-
-    console.log('File uploaded with ID:', fileId, 'Total files in persistent storage');
+    fs.writeFileSync(filePath, buffer);
+    fs.writeFileSync(metaPath, JSON.stringify(fileMetadata, null, 2));
+    
+    console.log('File uploaded:', fileId, file.name, file.size, 'bytes');
     
     return NextResponse.json({ 
       fileId, 
