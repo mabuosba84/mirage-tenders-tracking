@@ -33,6 +33,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const initializeUserSync = async () => {
     try {
+      // First get current leads from localStorage to preserve them
+      const currentTenders = JSON.parse(localStorage.getItem('mirage_tenders') || '[]')
+      
       // Sync current users to server on dashboard load
       const currentUsers = getAllUsers()
       const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
@@ -62,21 +65,40 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         },
         body: JSON.stringify({
           users: serverUsers,
-          tenders: []
+          tenders: currentTenders // Send current tenders instead of empty array
         }),
       })
       
       if (response.ok) {
-        console.log('✅ Initial user sync to server completed')
+        console.log('✅ Initial sync to server completed (users + tenders)')
       }
     } catch (error) {
-      console.log('⚠️ Initial user sync failed:', error)
+      console.log('⚠️ Initial sync failed:', error)
     }
   }
 
   const loadTenders = async () => {
     try {
+      // First try to get latest data from server
+      try {
+        const response = await fetch('/api/sync')
+        if (response.ok) {
+          const serverData = await response.json()
+          if (serverData.tenders && Array.isArray(serverData.tenders)) {
+            console.log('📥 Loaded tenders from server:', serverData.tenders.length)
+            // Update local storage with server data
+            localStorage.setItem('mirage_tenders', JSON.stringify(serverData.tenders))
+            setTenders(serverData.tenders)
+            return // Use server data as primary source
+          }
+        }
+      } catch (serverError) {
+        console.log('⚠️ Could not fetch from server, using local storage:', serverError)
+      }
+      
+      // Fallback to local storage and central storage
       const data = await loadTendersFromStorage()
+      console.log('📁 Loaded tenders from local storage:', data.length)
       setTenders(data)
     } catch (error) {
       console.error('Error loading tenders:', error)
@@ -87,8 +109,55 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     try {
       localStorage.setItem('mirage_tenders', JSON.stringify(tenderData))
       saveTendersToStorage(tenderData)
+      
+      // CRITICAL: Immediately sync to server API for cross-device access
+      syncTendersToServer(tenderData)
     } catch (error) {
       console.error('Error saving:', error)
+    }
+  }
+
+  const syncTendersToServer = async (tenderData: Lead[]) => {
+    try {
+      const currentUsers = getAllUsers()
+      const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
+      
+      // Create server-compatible user objects
+      const serverUsers = currentUsers.map(user => ({
+        ...user,
+        password: credentials[user.username] || 'defaultPassword123',
+        permissions: {
+          canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+          canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
+          canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
+          canViewTenderItems: user.permissions?.canViewTenderItems || true,
+          canEditTenders: user.permissions?.canEditTenders || true,
+          canDeleteTenders: user.permissions?.canDeleteTenders || false,
+          canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
+          canManageUsers: user.permissions?.canManageUsers || false,
+          canExportData: user.permissions?.canExportData || false,
+          canViewOptionalFields: user.permissions?.canViewOptionalFields || true
+        }
+      }))
+
+      const response = await fetch('/api/sync', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          users: serverUsers,
+          tenders: tenderData // Send complete tender data
+        }),
+      })
+      
+      if (response.ok) {
+        console.log('✅ Tenders synced to server:', tenderData.length)
+      } else {
+        console.error('❌ Failed to sync tenders to server')
+      }
+    } catch (error) {
+      console.error('❌ Error syncing tenders to server:', error)
     }
   }
 
