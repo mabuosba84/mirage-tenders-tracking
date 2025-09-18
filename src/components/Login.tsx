@@ -111,10 +111,11 @@ export default function Login({ onLogin }: LoginProps) {
         <div className="text-center">
           {/* Company Logo */}
           <div className="mx-auto h-20 w-auto flex items-center justify-center bg-white rounded-lg shadow-lg p-4 mb-6">
-            <div className="text-2xl font-bold text-blue-600">
-              MIRAGE BUSINESS
-              <div className="text-sm text-gray-600 font-normal">Solutions</div>
-            </div>
+            <img 
+              src="/mirage-logo.svg" 
+              alt="Mirage Business Solutions" 
+              className="h-full w-auto object-contain"
+            />
           </div>
           
           <h2 className="text-3xl font-extrabold text-gray-900">
