@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
-
-// In-memory file storage for Vercel serverless
-const fileStorage = new Map<string, { data: Buffer; meta: any }>();
+import { globalStorage } from '../../../../utils/globalStorage'
 
 // Local file storage for production builds
 const getLocalStoragePath = () => {
@@ -19,7 +17,8 @@ const ensureUploadsDir = () => {
 };
 
 const isLocalEnvironment = () => {
-  return process.env.NODE_ENV === 'production' && !process.env.VERCEL;
+  // Only use file system for local production builds, not on Vercel
+  return process.env.NODE_ENV === 'production' && !process.env.VERCEL && !process.env.RAILWAY && !process.env.NETLIFY;
 };
 
 export async function GET(
@@ -54,9 +53,16 @@ export async function GET(
       }
     }
     
-    // Fallback to memory storage (for Vercel)
+    // Fallback to global storage (for Vercel)
     if (!fileData) {
-      fileData = fileStorage.get(fileId);
+      const storedFile = globalStorage.files.find(f => f.id === fileId);
+      if (storedFile) {
+        fileData = {
+          data: Buffer.from(storedFile.data, 'base64'),
+          meta: storedFile.meta
+        };
+        console.log('File found in global storage:', fileId);
+      }
     }
     
     if (!fileData) {
@@ -195,11 +201,13 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Also store in memory (for fallback)
-    fileStorage.set(fileId, {
-      data: buffer,
+    // Also store in global storage (for Vercel)
+    globalStorage.files.push({
+      id: fileId,
+      data: buffer.toString('base64'),
       meta: fileMetadata
     });
+    globalStorage.lastUpdated = new Date().toISOString();
 
     console.log('File stored with ID:', fileId);    return NextResponse.json({ 
       fileId, 

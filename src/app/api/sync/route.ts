@@ -1,40 +1,5 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
-
-// Global storage for this serverless function instance
-// Note: This will reset on cold starts, but that's expected for serverless
-const globalStorage = {
-  tenders: [],
-  users: [
-    {
-      id: '1',
-      username: 'admin',
-      password: 'admin123',
-      role: 'admin',
-      name: 'System Administrator',
-      email: 'admin@miragebs.com',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00.000Z',
-      lastLogin: null
-    },
-    {
-      id: '2',
-      username: 'user',
-      password: 'user123',
-      role: 'user',
-      name: 'Regular User',
-      email: 'user@miragebs.com',
-      isActive: true,
-      createdAt: '2024-01-01T00:00:00.000Z',
-      lastLogin: null
-    }
-  ],
-  files: [],
-  settings: {
-    companyName: 'Mirage Business Solutions',
-    lastUpdated: '2024-01-01T00:00:00.000Z'
-  },
-  lastUpdated: '2024-01-01T00:00:00.000Z'
-};
+import { globalStorage } from '../../../utils/globalStorage';
 
 export async function GET() {
   console.log('GET /api/sync - Starting');

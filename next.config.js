@@ -1,5 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Configuration for both Vercel and static hosting
+  output: process.env.BUILD_STATIC ? 'export' : undefined,
+  trailingSlash: process.env.BUILD_STATIC ? true : false,
+  distDir: process.env.BUILD_STATIC ? 'static-build' : '.next',
+  
   // Production optimizations for Vercel
   serverExternalPackages: [],
   
@@ -7,6 +12,7 @@ const nextConfig = {
   images: {
     domains: ['localhost', 'vercel.app'],
     formats: ['image/webp', 'image/avif'],
+    unoptimized: process.env.BUILD_STATIC ? true : false,
   },
   
   // Performance optimizations
