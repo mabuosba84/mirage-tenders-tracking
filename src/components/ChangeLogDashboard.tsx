@@ -45,6 +45,17 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
     searchTerm: ''
   })
 
+  useEffect(() => {
+    // Only load if user is admin
+    if (currentUser.role === 'admin') {
+      loadChangeLogs()
+    }
+  }, [currentUser.role])
+
+  useEffect(() => {
+    applyFilters()
+  }, [logs, filters])
+
   // Security check - only admins can access this dashboard
   if (currentUser.role !== 'admin') {
     return (
@@ -59,14 +70,6 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
       </div>
     )
   }
-
-  useEffect(() => {
-    loadChangeLogs()
-  }, [])
-
-  useEffect(() => {
-    applyFilters()
-  }, [logs, filters])
 
   const loadChangeLogs = async () => {
     setIsLoading(true)
