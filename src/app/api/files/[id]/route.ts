@@ -10,8 +10,8 @@ export async function GET(
     const resolvedParams = await params
     const fileId = resolvedParams.id
     
-    // Simple file serving from uploads directory
-    const uploadsDir = path.join(process.cwd(), 'uploads');
+    // Simple file serving from persistent data/uploads directory
+    const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
     const filePath = path.join(uploadsDir, fileId);
     const metaPath = path.join(uploadsDir, `${fileId}.meta`);
     

@@ -1,6 +1,38 @@
 # Deployment Guide for Mirage Tenders Tracking System
 
-## Option 1: Vercel (Recommended)
+## File Storage Important Note
+
+This application now uses persistent file storage in the `data/uploads` directory to ensure uploaded documents (Bank Guarantees, Proposal Documents, Tender Documents) persist across deployments.
+
+### Railway Deployment (Recommended for File Storage)
+
+Railway provides persistent disk storage which is perfect for this application's file upload requirements.
+
+#### Steps:
+1. **Push code to GitHub:**
+   ```bash
+   git init
+   git add .
+   git commit -m "Initial commit"
+   git branch -M main
+   git remote add origin https://github.com/yourusername/mirage-tenders.git
+   git push -u origin main
+   ```
+
+2. **Deploy on Railway:**
+   - Go to [railway.app](https://railway.app)
+   - Sign up/Login with GitHub
+   - Click "New Project" → "Deploy from GitHub repo"
+   - Select your repository
+   - Railway will automatically detect Next.js and deploy
+
+3. **The app will be live at:** Your Railway provided URL
+
+4. **File Storage:** Files are automatically stored in the persistent `data/uploads` directory and will survive deployments.
+
+## Option 1: Vercel (Limited File Storage)
+
+**⚠️ Note:** Vercel has ephemeral filesystem - uploaded files will be lost on each deployment. Only suitable for testing.
 
 ### Prerequisites:
 1. GitHub account
@@ -30,7 +62,9 @@
 
 3. **Your app will be live at:** `https://your-app-name.vercel.app`
 
-## Option 2: Netlify
+## Option 2: Netlify (Static Export Only)
+
+**⚠️ Note:** Netlify static hosting doesn't support file uploads. Only suitable for demo purposes.
 
 ### Steps:
 1. **Build the project:**

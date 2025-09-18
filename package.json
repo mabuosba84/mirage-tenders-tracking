@@ -8,6 +8,7 @@
     "dev:network": "next dev -p 3001 --hostname 0.0.0.0",
     "build": "next build",
     "build:static": "set BUILD_STATIC=true&& next build",
+    "build:railway": "bash railway-deploy.sh",
     "start": "next start",
     "lint": "next lint",
     "export:namecheap": "npm run build:static && npm run package:namecheap",

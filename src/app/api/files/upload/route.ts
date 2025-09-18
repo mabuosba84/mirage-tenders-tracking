@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 
-// Local file storage for production builds
+// Local file storage for production builds using persistent data directory
 const getLocalStoragePath = () => {
-  return path.join(process.cwd(), 'uploads');
+  // Use persistent data directory on Railway
+  const dataDir = path.join(process.cwd(), 'data', 'uploads');
+  return dataDir;
 };
 
 const ensureUploadsDir = () => {
