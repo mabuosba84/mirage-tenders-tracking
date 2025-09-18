@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 import { X, Download, Printer, Calendar, Clock, DollarSign, TrendingUp, User as UserIcon, FileText, Package, Paperclip, Shield, AlertTriangle, Eye, ExternalLink } from 'lucide-react'
 import { formatResponseTime, getResponseTimeStatus, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderPreviewProps {
-  tender: Tender
+  tender: Lead
   user: User
   onClose: () => void
 }

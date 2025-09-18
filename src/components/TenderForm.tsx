@@ -1,15 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Tender, TenderFormData, FormErrors, TenderItem, TenderAttachment } from '@/types'
+import { User, Lead, LeadFormData, LeadItem, LeadAttachment, FormErrors } from '@/types'
 import { Save, X, Calculator, Clock, Plus, Trash2, Upload, FileText, AlertTriangle, Shield } from 'lucide-react'
 import { calculateResponseTime, formatResponseTime, getResponseTimeStatus, formatNumberWithCommas, formatPercentage } from '@/utils/dateCalculations'
 import FormattedNumberInput from './FormattedNumberInput'
 
 interface TenderFormProps {
   user: User
-  tender?: Tender | null
-  onSubmit: (tender: Tender) => void
+  tender?: Lead | null
+  onSubmit: (tender: Lead) => void
   onCancel: () => void
 }
 
@@ -31,7 +31,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
     }
   }
 
-  const [formData, setFormData] = useState<TenderFormData>(() => {
+  const [formData, setFormData] = useState<LeadFormData>(() => {
     if (tender) {
       return {
         leadType: tender.leadType || 'Tender',
@@ -40,11 +40,13 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         tenderAnnouncementDate: tender.tenderAnnouncementDate ? tender.tenderAnnouncementDate.toISOString().split('T')[0] : '',
         requestDate: tender.requestDate ? tender.requestDate.toISOString().split('T')[0] : '',
         submissionDate: tender.submissionDate ? tender.submissionDate.toISOString().split('T')[0] : '',
-        dateOfPriceRequestToHp: tender.dateOfPriceRequestToHp ? tender.dateOfPriceRequestToHp.toISOString().split('T')[0] : '',
-        dateOfPriceReceivedFromHp: tender.dateOfPriceReceivedFromHp ? tender.dateOfPriceReceivedFromHp.toISOString().split('T')[0] : '',
-        costFromHP: tender.costFromHP?.toString() || '',
+        dateOfPriceRequestToVendor: tender.dateOfPriceRequestToVendor ? tender.dateOfPriceRequestToVendor.toISOString().split('T')[0] : '',
+        dateOfPriceReceivedFromVendor: tender.dateOfPriceReceivedFromVendor ? tender.dateOfPriceReceivedFromVendor.toISOString().split('T')[0] : '',
+        costFromVendor: tender.costFromVendor?.toString() || '',
         sellingPrice: tender.sellingPrice?.toString() || '',
         tenderStatus: tender.tenderStatus,
+        lostReason: tender.lostReason || '',
+        ignoredReason: tender.ignoredReason || '',
         competitorWinningPrice: tender.competitorWinningPrice || '',
         bankGuaranteeIssueDate: tender.bankGuaranteeIssueDate ? tender.bankGuaranteeIssueDate.toISOString().split('T')[0] : '',
         bankGuaranteeExpiryDate: tender.bankGuaranteeExpiryDate ? tender.bankGuaranteeExpiryDate.toISOString().split('T')[0] : '',
@@ -60,11 +62,13 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       tenderAnnouncementDate: '',
       requestDate: '',
       submissionDate: '',
-      dateOfPriceRequestToHp: '',
-      dateOfPriceReceivedFromHp: '',
-      costFromHP: '',
+      dateOfPriceRequestToVendor: '',
+      dateOfPriceReceivedFromVendor: '',
+      costFromVendor: '',
       sellingPrice: '',
       tenderStatus: 'Under review',
+      lostReason: '',
+      ignoredReason: '',
       competitorWinningPrice: '',
       bankGuaranteeIssueDate: '',
       bankGuaranteeExpiryDate: '',
@@ -74,18 +78,18 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
     }
   })
 
-  const [items, setItems] = useState<TenderItem[]>(() => tender?.items || [])
-  const [attachments, setAttachments] = useState<TenderAttachment[]>(() => tender?.attachments || [])
+  const [items, setItems] = useState<LeadItem[]>(() => tender?.items || [])
+  const [attachments, setAttachments] = useState<LeadAttachment[]>(() => tender?.attachments || [])
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<FormErrors>({})
 
   // Helper function to add a new item
   const addItem = () => {
-    const newItem: TenderItem = {
+    const newItem: LeadItem = {
       id: Date.now().toString(),
       description: '',
       quantity: 1,
-      costFromHP: 0,
+      costFromVendor: 0,
       sellingPrice: 0,
       profitMargin: 0,
       totalPrice: 0
@@ -94,22 +98,22 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   }
 
   // Helper function to update an item
-  const updateItem = (id: string, field: keyof TenderItem, value: string | number) => {
+  const updateItem = (id: string, field: keyof LeadItem, value: string | number) => {
     setItems(prev => prev.map(item => {
       if (item.id === id) {
         const updated = { ...item, [field]: value }
         
         // Calculate profit margin when cost or selling price changes
-        if (field === 'costFromHP' || field === 'sellingPrice') {
-          if (updated.costFromHP > 0) {
-            updated.profitMargin = ((updated.sellingPrice - updated.costFromHP) / updated.costFromHP) * 100
+        if (field === 'costFromVendor' || field === 'sellingPrice') {
+          if (updated.costFromVendor > 0) {
+            updated.profitMargin = ((updated.sellingPrice - updated.costFromVendor) / updated.costFromVendor) * 100
           } else {
             updated.profitMargin = 0
           }
         }
         
         // Calculate total price when quantity or selling price changes
-        if (field === 'quantity' || field === 'sellingPrice' || field === 'costFromHP') {
+        if (field === 'quantity' || field === 'sellingPrice' || field === 'costFromVendor') {
           updated.totalPrice = updated.quantity * updated.sellingPrice
         }
         
@@ -144,7 +148,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         if (response.ok) {
           const uploadResult = await response.json()
           
-          const newAttachment: TenderAttachment = {
+          const newAttachment: LeadAttachment = {
             id: uploadResult.id,
             name: uploadResult.name,
             type: type,
@@ -160,7 +164,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         } else {
           // Fallback to blob URL if server upload fails
           console.warn('Server upload failed, using blob URL fallback')
-          const newAttachment: TenderAttachment = {
+          const newAttachment: LeadAttachment = {
             id: Date.now().toString(),
             name: file.name,
             type: type,
@@ -174,7 +178,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       } catch (error) {
         console.error('File upload error:', error)
         // Fallback to blob URL
-        const newAttachment: TenderAttachment = {
+        const newAttachment: LeadAttachment = {
           id: Date.now().toString(),
           name: file.name,
           type: type,
@@ -203,7 +207,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   }
 
   const calculateProfitMargin = () => {
-    const cost = parseFloat(formData.costFromHP)
+    const cost = parseFloat(formData.costFromVendor)
     const selling = parseFloat(formData.sellingPrice)
     
     if (cost && selling && selling > 0) {
@@ -213,12 +217,12 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
   }
 
   const getCurrentResponseTime = () => {
-    if (!formData.dateOfPriceRequestToHp || !formData.dateOfPriceReceivedFromHp) {
+    if (!formData.dateOfPriceRequestToVendor || !formData.dateOfPriceReceivedFromVendor) {
       return null
     }
     
-    const requestDate = new Date(formData.dateOfPriceRequestToHp)
-    const receivedDate = new Date(formData.dateOfPriceReceivedFromHp)
+    const requestDate = new Date(formData.dateOfPriceRequestToVendor)
+    const receivedDate = new Date(formData.dateOfPriceReceivedFromVendor)
     
     return calculateResponseTime(requestDate, receivedDate)
   }
@@ -234,12 +238,21 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
       newErrors.tenderStatus = 'Tender status is required'
     }
 
+    // Validate reason fields for Lost and Ignored statuses
+    if (formData.tenderStatus === 'Lost' && !formData.lostReason.trim()) {
+      newErrors.lostReason = 'Reason for losing the lead is required'
+    }
+
+    if (formData.tenderStatus === 'Ignored Leads' && !formData.ignoredReason.trim()) {
+      newErrors.ignoredReason = 'Reason for ignoring the lead is required'
+    }
+
     if (!formData.category || formData.category.length === 0) {
       newErrors.category = 'At least one category must be selected'
     }
 
-    if (formData.costFromHP && isNaN(parseFloat(formData.costFromHP))) {
-      newErrors.costFromHP = 'Cost must be a valid number'
+    if (formData.costFromVendor && isNaN(parseFloat(formData.costFromVendor))) {
+      newErrors.costFromVendor = 'Cost must be a valid number'
     }
 
     if (formData.sellingPrice && isNaN(parseFloat(formData.sellingPrice))) {
@@ -259,10 +272,10 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
 
     try {
       const now = new Date()
-      const requestDate = formData.dateOfPriceRequestToHp ? new Date(formData.dateOfPriceRequestToHp) : null
-      const receivedDate = formData.dateOfPriceReceivedFromHp ? new Date(formData.dateOfPriceReceivedFromHp) : null
+      const requestDate = formData.dateOfPriceRequestToVendor ? new Date(formData.dateOfPriceRequestToVendor) : null
+      const receivedDate = formData.dateOfPriceReceivedFromVendor ? new Date(formData.dateOfPriceReceivedFromVendor) : null
       
-      const newTender: Tender = {
+      const newTender: Lead = {
         id: tender?.id || Date.now().toString(),
         leadType: formData.leadType,
         customerName: formData.customerName,
@@ -270,13 +283,15 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
         tenderAnnouncementDate: formData.tenderAnnouncementDate ? new Date(formData.tenderAnnouncementDate) : null,
         requestDate: formData.requestDate ? new Date(formData.requestDate) : null,
         submissionDate: formData.submissionDate ? new Date(formData.submissionDate) : null,
-        dateOfPriceRequestToHp: requestDate,
-        dateOfPriceReceivedFromHp: receivedDate,
+        dateOfPriceRequestToVendor: requestDate,
+        dateOfPriceReceivedFromVendor: receivedDate,
         responseTimeInDays: calculateResponseTime(requestDate, receivedDate),
-        costFromHP: formData.costFromHP ? parseFloat(formData.costFromHP) : null,
+        costFromVendor: formData.costFromVendor ? parseFloat(formData.costFromVendor) : null,
         sellingPrice: formData.sellingPrice ? parseFloat(formData.sellingPrice) : null,
-        profitMargin: formData.costFromHP && formData.sellingPrice ? parseFloat(calculateProfitMargin()) : null,
+        profitMargin: formData.costFromVendor && formData.sellingPrice ? parseFloat(calculateProfitMargin()) : null,
         tenderStatus: formData.tenderStatus,
+        lostReason: formData.lostReason || null,
+        ignoredReason: formData.ignoredReason || null,
         competitorWinningPrice: formData.competitorWinningPrice || null,
         bankGuaranteeIssueDate: formData.bankGuaranteeIssueDate ? new Date(formData.bankGuaranteeIssueDate) : null,
         bankGuaranteeExpiryDate: formData.bankGuaranteeExpiryDate ? new Date(formData.bankGuaranteeExpiryDate) : null,
@@ -990,11 +1005,60 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 <option value="Lost">Lost</option>
                 <option value="Under review">Under review</option>
                 <option value="Global Agreement">Global Agreement</option>
+                <option value="Ignored Leads">Ignored Leads</option>
               </select>
               {errors.tenderStatus && (
                 <p className="mt-1 text-sm text-red-600">{errors.tenderStatus}</p>
               )}
             </div>
+
+            {/* Conditional Reason Field for Lost Status */}
+            {formData.tenderStatus === 'Lost' && (
+              <div>
+                <label htmlFor="lostReason" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Losing the Lead *
+                </label>
+                <textarea
+                  id="lostReason"
+                  name="lostReason"
+                  value={formData.lostReason}
+                  onChange={handleInputChange}
+                  required
+                  rows={3}
+                  placeholder="Please provide the reason why this lead was lost..."
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.lostReason ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.lostReason && (
+                  <p className="mt-1 text-sm text-red-600">{errors.lostReason}</p>
+                )}
+              </div>
+            )}
+
+            {/* Conditional Reason Field for Ignored Leads Status */}
+            {formData.tenderStatus === 'Ignored Leads' && (
+              <div>
+                <label htmlFor="ignoredReason" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Ignoring the Lead *
+                </label>
+                <textarea
+                  id="ignoredReason"
+                  name="ignoredReason"
+                  value={formData.ignoredReason}
+                  onChange={handleInputChange}
+                  required
+                  rows={3}
+                  placeholder="Please provide the reason why this lead is being ignored..."
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.ignoredReason ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                />
+                {errors.ignoredReason && (
+                  <p className="mt-1 text-sm text-red-600">{errors.ignoredReason}</p>
+                )}
+              </div>
+            )}
 
             <div>
               <label htmlFor="competitorWinningPrice" className="block text-sm font-medium text-gray-700 mb-2">

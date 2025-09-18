@@ -1,12 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 import { FileText, Download, Printer, Filter, Calendar } from 'lucide-react'
 import { formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface ReportsProps {
-  tenders: Tender[]
+  tenders: Lead[]
   user: User
 }
 

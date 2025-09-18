@@ -1,11 +1,11 @@
 'use client'
 
-import { Tender, User } from '@/types'
+import { Lead, User } from '@/types'
 import { TrendingUp, TrendingDown, Clock, Award, DollarSign, Percent, Shield } from 'lucide-react'
 import { formatResponseTime, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface StatisticsProps {
-  tenders: Tender[]
+  tenders: Lead[]
   user: User
 }
 
@@ -17,7 +17,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
   const safeUser = {
     ...user,
     permissions: {
-      canViewCostFromHP: user.permissions?.canViewCostFromHP ?? (user.role === 'admin'),
+      canViewCostFromVendor: user.permissions?.canViewCostFromVendor ?? (user.role === 'admin'),
       canViewSellingPrice: user.permissions?.canViewSellingPrice ?? (user.role === 'admin'),
       canViewProfitMargin: user.permissions?.canViewProfitMargin ?? (user.role === 'admin'),
       canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
@@ -45,12 +45,12 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
       .reduce((sum, t) => sum + (t.sellingPrice || 0), 0) : 0
     
     // Only calculate cost-related stats if user has permission
-    const totalCost = safeUser.permissions?.canViewCostFromHP ? tenders
-      .filter(t => t.tenderStatus === 'Won' && t.costFromHP)
-      .reduce((sum, t) => sum + (t.costFromHP || 0), 0) : 0
+    const totalCost = safeUser.permissions?.canViewCostFromVendor ? tenders
+      .filter(t => t.tenderStatus === 'Won' && t.costFromVendor)
+      .reduce((sum, t) => sum + (t.costFromVendor || 0), 0) : 0
     
     // Profit calculation - requires both cost and selling price permissions
-    const totalProfit = (safeUser.permissions?.canViewCostFromHP && safeUser.permissions?.canViewSellingPrice) 
+    const totalProfit = (safeUser.permissions?.canViewCostFromVendor && safeUser.permissions?.canViewSellingPrice) 
       ? totalRevenue - totalCost : 0
     
     // Profit margin calculation - requires profit margin permission
@@ -66,7 +66,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
     
     const fastResponses = tendersWithResponseTime.filter(t => (t.responseTimeInDays || 0) <= 1).length
     const slowResponses = tendersWithResponseTime.filter(t => (t.responseTimeInDays || 0) > 7).length
-    const pendingResponses = tenders.filter(t => t.dateOfPriceRequestToHp && !t.dateOfPriceReceivedFromHp).length
+    const pendingResponses = tenders.filter(t => t.dateOfPriceRequestToVendor && !t.dateOfPriceReceivedFromVendor).length
 
     return {
       totalTenders,
@@ -205,7 +205,7 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
           />
         )}
 
-        {(safeUser.permissions?.canViewCostFromHP && safeUser.permissions?.canViewSellingPrice) ? (
+        {(safeUser.permissions?.canViewCostFromVendor && safeUser.permissions?.canViewSellingPrice) ? (
           <StatCard
             title="Total Profit"
             value={formatNumber(stats.totalProfit)}

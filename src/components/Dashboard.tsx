@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Tender } from '@/types'
+import { User, Lead } from '@/types'
 import { calculateResponseTime } from '@/utils/dateCalculations'
 import { loadTendersFromStorage, saveTendersToStorage } from '@/utils/centralStorage'
 import { syncDataAcrossDomains } from '@/utils/centralStorage'
@@ -22,10 +22,10 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ user, onLogout }: DashboardProps) {
-  const [tenders, setTenders] = useState<Tender[]>([])
+  const [tenders, setTenders] = useState<Lead[]>([])
   const [activeTab, setActiveTab] = useState<'overview' | 'add' | 'list' | 'search' | 'reports' | 'users'>('overview')
-  const [editingTender, setEditingTender] = useState<Tender | null>(null)
-  const [viewingTender, setViewingTender] = useState<Tender | null>(null)
+  const [editingTender, setEditingTender] = useState<Lead | null>(null)
+  const [viewingTender, setViewingTender] = useState<Lead | null>(null)
   const [saveMessage, setSaveMessage] = useState<string | null>(null)
   const [networkSync, setNetworkSync] = useState<NetworkSyncManager | null>(null)
   const [syncStatus, setSyncStatus] = useState<string>('Initializing...')
@@ -244,7 +244,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   }, [networkSync])
 
   // Helper function to save tenders to centralized storage
-  const saveTendersLocal = async (tendersToSave: Tender[]) => {
+  const saveTendersLocal = async (tendersToSave: Lead[]) => {
     try {
       console.log('Saving tenders to centralized storage:', tendersToSave.length)
       await saveTendersToStorage(tendersToSave)
@@ -503,7 +503,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }
   }
 
-  const handleAddTender = async (newTender: Tender) => {
+  const handleAddTender = async (newTender: Lead) => {
     console.log('Adding new tender:', newTender.customerName)
     const updatedTenders = [newTender, ...tenders]
     console.log('Updated tenders count:', updatedTenders.length)
@@ -522,12 +522,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }, 500)
   }
 
-  const handleEditTender = (tender: Tender) => {
+  const handleEditTender = (tender: Lead) => {
     setEditingTender(tender)
     setActiveTab('add')
   }
 
-  const handleUpdateTender = async (updatedTender: Tender) => {
+  const handleUpdateTender = async (updatedTender: Lead) => {
     const updatedTenders = tenders.map(t => t.id === updatedTender.id ? updatedTender : t)
     setTenders(updatedTenders)
     await saveTendersLocal(updatedTenders)
@@ -561,7 +561,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }, 500)
   }
 
-  const handleViewTenderDetails = (tender: Tender) => {
+  const handleViewTenderDetails = (tender: Lead) => {
     setViewingTender(tender)
   }
 

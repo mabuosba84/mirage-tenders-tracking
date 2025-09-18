@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { User, Tender } from '@/types'
+import { Lead, User } from '@/types'
 import { Search, Filter, Calendar, Users, Package, FileText, RefreshCw, X, Eye } from 'lucide-react'
 import { formatNumberWithCommas, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderSearchProps {
-  tenders: Tender[]
+  tenders: Lead[]
   user: User
-  onViewDetails: (tender: Tender) => void
+  onViewDetails: (tender: Lead) => void
 }
 
 interface SearchFilters {
@@ -34,14 +34,14 @@ export default function TenderSearch({ tenders, user, onViewDetails }: TenderSea
     itemDescription: ''
   })
   
-  const [filteredTenders, setFilteredTenders] = useState<Tender[]>(tenders)
+  const [filteredTenders, setFilteredTenders] = useState<Lead[]>(tenders)
   const [isSearching, setIsSearching] = useState(false)
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false)
 
   // Get unique values for dropdowns
   const uniqueCategories = Array.from(new Set(tenders.flatMap(t => t.category))).sort()
   const uniqueUsers = Array.from(new Set(tenders.map(t => t.addedBy))).sort()
-  const statuses = ['Won', 'Lost', 'Under review', 'Global Agreement']
+  const statuses = ['Won', 'Lost', 'Under review', 'Global Agreement', 'Ignored Leads']
 
   // Apply filters whenever filters or tenders change
   useEffect(() => {

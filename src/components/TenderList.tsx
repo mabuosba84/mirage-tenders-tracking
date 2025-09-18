@@ -1,16 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { User, Tender } from '@/types'
+import { User, Lead } from '@/types'
 import { Edit, Trash2, Search, Filter, Calendar, DollarSign, Clock } from 'lucide-react'
 import { formatResponseTime, getResponseTimeStatus, formatNumber, formatPercentage } from '@/utils/dateCalculations'
 
 interface TenderListProps {
-  tenders: Tender[]
+  tenders: Lead[]
   currentUser: User
-  onEdit: (tender: Tender) => void
+  onEdit: (tender: Lead) => void
   onDelete: (tenderId: string) => void
-  onViewDetails: (tender: Tender) => void
+  onViewDetails: (tender: Lead) => void
 }
 
 export default function TenderList({ tenders, currentUser, onEdit, onDelete, onViewDetails }: TenderListProps) {
@@ -78,6 +78,8 @@ export default function TenderList({ tenders, currentUser, onEdit, onDelete, onV
         return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'Global Agreement':
         return 'bg-purple-100 text-purple-800 border-purple-200'
+      case 'Ignored Leads':
+        return 'bg-gray-100 text-gray-800 border-gray-300'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
     }
