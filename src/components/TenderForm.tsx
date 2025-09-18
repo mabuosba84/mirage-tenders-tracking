@@ -733,7 +733,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           
                         />
                       </div>
-                      <div className="md:col-span-2 lg:col-span-2">
+                      <div className="md:col-span-2 lg:col-span-3">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Cost from Vendor (JD)
                         </label>
@@ -745,7 +745,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           placeholder="Enter cost"
                         />
                       </div>
-                      <div className="md:col-span-2 lg:col-span-2">
+                      <div className="md:col-span-3 lg:col-span-3">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Selling Price (JD)
                         </label>
@@ -757,19 +757,18 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           placeholder="Enter selling price"
                         />
                       </div>
-                      <div className="md:col-span-1 lg:col-span-2">
+                    </div>
+                    
+                    {/* Profit Margin in separate row for better organization */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                      <div className="md:col-span-1">
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Profit Margin (%)
                         </label>
                         <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          max="100"
-                          value={item.profitMargin}
-                          onChange={(e) => updateItem(item.id, 'profitMargin', parseFloat(e.target.value) || 0)}
+                          type="text"
+                          value={item.profitMargin.toFixed(2)}
                           className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${item.profitMargin < 0 ? 'text-red-600 font-semibold' : ''}`}
-                          
                           readOnly
                         />
                       </div>
