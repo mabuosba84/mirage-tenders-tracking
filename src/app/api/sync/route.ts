@@ -1,10 +1,14 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { readPersistentData } from '../../../utils/persistentStorage';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   console.log('🔄 GET /api/sync - Starting with PERSISTENT STORAGE');
   
   try {
+    // SECURITY: This endpoint should require authentication in production
+    // For now, we'll return all data but in production this should be authenticated
+    console.warn('⚠️ WARNING: GET /api/sync endpoint has no authentication - should be secured in production');
+    
     // Read from persistent file storage instead of memory
     const persistentData = await readPersistentData();
     

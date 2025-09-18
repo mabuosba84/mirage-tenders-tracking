@@ -67,7 +67,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
     { id: 'list' as const, label: 'Lead List', icon: List },
     { id: 'search' as const, label: 'Search', icon: Search },
     { id: 'reports' as const, label: 'Reports', icon: FileText },
-    ...(user.role === 'admin' ? [{ id: 'users' as const, label: 'Users', icon: Users }] : []),
+    ...(user.permissions?.canManageUsers ? [{ id: 'users' as const, label: 'Users', icon: Users }] : []),
     ...(user.role === 'admin' ? [{ id: 'changelog' as const, label: 'Change Log', icon: History }] : []),
   ]
 

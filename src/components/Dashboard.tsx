@@ -260,7 +260,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       case 'reports':
         return <Reports tenders={tenders} user={user} />
       case 'users':
-        return user.role === 'admin' ? <UserManagement currentUser={user} /> : <Statistics tenders={tenders} user={user} />
+        return user.permissions?.canManageUsers ? <UserManagement currentUser={user} /> : <Statistics tenders={tenders} user={user} />
       case 'changelog':
         return <ChangeLogDashboard currentUser={user} />
       default:

@@ -198,7 +198,9 @@ export default function Reports({ tenders, user }: ReportsProps) {
             >
               <option value="summary">Summary Report</option>
               <option value="detailed">Detailed Report</option>
-              <option value="financial">Financial Report</option>
+              {user.permissions?.canViewFinancialReports && (
+                <option value="financial">Financial Report</option>
+              )}
               <option value="responseTime">Response Time Analysis</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">

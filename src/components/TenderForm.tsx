@@ -67,20 +67,20 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
     }
   }
 
-  // Simplified user - no complex permission checks
+  // Use actual user permissions - SECURITY CRITICAL
   const safeUser = {
     ...user,
     permissions: {
-      canViewCostFromVendor: true,
-      canViewSellingPrice: true,
-      canViewProfitMargin: true,
-      canViewTenderItems: true,
-      canEditTenders: true,
-      canDeleteTenders: true,
-      canViewFinancialReports: true,
-      canManageUsers: user.role === 'admin',
-      canExportData: true,
-      canViewOptionalFields: true
+      canViewCostFromVendor: user.permissions?.canViewCostFromVendor ?? (user.role === 'admin'),
+      canViewSellingPrice: user.permissions?.canViewSellingPrice ?? (user.role === 'admin'),
+      canViewProfitMargin: user.permissions?.canViewProfitMargin ?? (user.role === 'admin'),
+      canViewTenderItems: user.permissions?.canViewTenderItems ?? true,
+      canEditTenders: user.permissions?.canEditTenders ?? (user.role === 'admin'),
+      canDeleteTenders: user.permissions?.canDeleteTenders ?? (user.role === 'admin'),
+      canViewFinancialReports: user.permissions?.canViewFinancialReports ?? (user.role === 'admin'),
+      canManageUsers: user.permissions?.canManageUsers ?? (user.role === 'admin'),
+      canExportData: user.permissions?.canExportData ?? (user.role === 'admin'),
+      canViewOptionalFields: user.permissions?.canViewOptionalFields ?? true
     }
   }
 
@@ -650,65 +650,71 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               Financial Information
             </h3>
             
-            {/* Financial fields - always visible */}
+            {/* Financial fields - visible based on permissions */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <label htmlFor="costFromVendor" className="block text-sm font-medium text-gray-700 mb-2">
-                  Cost from Vendor (JD)
-                </label>
-                <FormattedNumberInput
-                  value={formData.costFromVendor}
-                  onChange={(value) => setFormData(prev => ({ ...prev, costFromVendor: value.toString() }))}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.costFromVendor ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter cost"
-                  id="costFromVendor"
-                  name="costFromVendor"
-                />
-                {errors.costFromVendor && (
-                  <p className="mt-1 text-sm text-red-600">{errors.costFromVendor}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="sellingPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                  Selling Price (JD)
-                </label>
-                <FormattedNumberInput
-                  value={formData.sellingPrice}
-                  onChange={(value) => setFormData(prev => ({ ...prev, sellingPrice: value.toString() }))}
-                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                    errors.sellingPrice ? 'border-red-300' : 'border-gray-300'
-                  }`}
-                  placeholder="Enter selling price"
-                  id="sellingPrice"
-                  name="sellingPrice"
-                />
-                {errors.sellingPrice && (
-                  <p className="mt-1 text-sm text-red-600">{errors.sellingPrice}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="profitMargin" className="block text-sm font-medium text-gray-700 mb-2">
-                  Profit Margin
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="profitMargin"
-                    value={`${profitMargin}%`}
-                    readOnly
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed"
-                    placeholder="Auto-calculated"
+              {safeUser.permissions?.canViewCostFromVendor && (
+                <div>
+                  <label htmlFor="costFromVendor" className="block text-sm font-medium text-gray-700 mb-2">
+                    Cost from Vendor (JD)
+                  </label>
+                  <FormattedNumberInput
+                    value={formData.costFromVendor}
+                    onChange={(value) => setFormData(prev => ({ ...prev, costFromVendor: value.toString() }))}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.costFromVendor ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter cost"
+                    id="costFromVendor"
+                    name="costFromVendor"
                   />
-                  <Calculator className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  {errors.costFromVendor && (
+                    <p className="mt-1 text-sm text-red-600">{errors.costFromVendor}</p>
+                  )}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Automatically calculated: (Selling Price - Cost) / Cost × 100
-                </p>
-              </div>
+              )}
+
+              {safeUser.permissions?.canViewSellingPrice && (
+                <div>
+                  <label htmlFor="sellingPrice" className="block text-sm font-medium text-gray-700 mb-2">
+                    Selling Price (JD)
+                  </label>
+                  <FormattedNumberInput
+                    value={formData.sellingPrice}
+                    onChange={(value) => setFormData(prev => ({ ...prev, sellingPrice: value.toString() }))}
+                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                      errors.sellingPrice ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="Enter selling price"
+                    id="sellingPrice"
+                    name="sellingPrice"
+                  />
+                  {errors.sellingPrice && (
+                    <p className="mt-1 text-sm text-red-600">{errors.sellingPrice}</p>
+                  )}
+                </div>
+              )}
+
+              {safeUser.permissions?.canViewProfitMargin && (
+                <div>
+                  <label htmlFor="profitMargin" className="block text-sm font-medium text-gray-700 mb-2">
+                    Profit Margin
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      id="profitMargin"
+                      value={`${profitMargin}%`}
+                      readOnly
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed"
+                      placeholder="Auto-calculated"
+                    />
+                    <Calculator className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Automatically calculated: (Selling Price - Cost) / Cost × 100
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
