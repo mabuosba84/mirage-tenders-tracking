@@ -14,25 +14,20 @@ interface TenderFormProps {
 }
 
 export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderFormProps) {
-  // Ensure user has proper permissions structure
-  const defaultPermissions = {
-    canViewCostFromHP: user.role === 'admin',
-    canViewSellingPrice: true,
-    canViewProfitMargin: user.role === 'admin',
-    canViewTenderItems: true,
-    canEditTenders: true,
-    canDeleteTenders: user.role === 'admin',
-    canViewFinancialReports: user.role === 'admin',
-    canManageUsers: user.role === 'admin',
-    canExportData: true,
-    canViewOptionalFields: true
-  }
-
+  // Simplified user - no complex permission checks
   const safeUser = {
     ...user,
     permissions: {
-      ...defaultPermissions,
-      ...user.permissions
+      canViewCostFromHP: true,
+      canViewSellingPrice: true,
+      canViewProfitMargin: true,
+      canViewTenderItems: true,
+      canEditTenders: true,
+      canDeleteTenders: true,
+      canViewFinancialReports: true,
+      canManageUsers: user.role === 'admin',
+      canExportData: true,
+      canViewOptionalFields: true
     }
   }
 
@@ -480,8 +475,8 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 name="dateOfPriceRequestToHp"
                 value={formData.dateOfPriceRequestToHp}
                 onChange={handleInputChange}
+                placeholder=""
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                disabled={!safeUser.permissions.canEditTenders}
               />
             </div>
 
@@ -495,8 +490,8 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 name="dateOfPriceReceivedFromHp"
                 value={formData.dateOfPriceReceivedFromHp}
                 onChange={handleInputChange}
+                placeholder=""
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                disabled={!safeUser.permissions.canEditTenders}
               />
             </div>
           </div>
@@ -552,117 +547,66 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               Financial Information
             </h3>
             
-            {/* Hide cost from HP for users without permission */}
-            {safeUser.permissions.canViewCostFromHP && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label htmlFor="costFromHP" className="block text-sm font-medium text-gray-700 mb-2">
-                    Cost from HP (JD)
-                  </label>
-                  <FormattedNumberInput
-                    value={formData.costFromHP}
-                    onChange={(value) => setFormData(prev => ({ ...prev, costFromHP: value.toString() }))}
-                    className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                      errors.costFromHP ? 'border-red-300' : 'border-gray-300'
-                    }`}
-                    placeholder="Enter cost"
-                    id="costFromHP"
-                    name="costFromHP"
+            {/* Financial fields - always visible */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label htmlFor="costFromHP" className="block text-sm font-medium text-gray-700 mb-2">
+                  Cost from HP (JD)
+                </label>
+                <FormattedNumberInput
+                  value={formData.costFromHP}
+                  onChange={(value) => setFormData(prev => ({ ...prev, costFromHP: value.toString() }))}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.costFromHP ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter cost"
+                  id="costFromHP"
+                  name="costFromHP"
+                />
+                {errors.costFromHP && (
+                  <p className="mt-1 text-sm text-red-600">{errors.costFromHP}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="sellingPrice" className="block text-sm font-medium text-gray-700 mb-2">
+                  Selling Price (JD)
+                </label>
+                <FormattedNumberInput
+                  value={formData.sellingPrice}
+                  onChange={(value) => setFormData(prev => ({ ...prev, sellingPrice: value.toString() }))}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    errors.sellingPrice ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter selling price"
+                  id="sellingPrice"
+                  name="sellingPrice"
+                />
+                {errors.sellingPrice && (
+                  <p className="mt-1 text-sm text-red-600">{errors.sellingPrice}</p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="profitMargin" className="block text-sm font-medium text-gray-700 mb-2">
+                  Profit Margin
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    id="profitMargin"
+                    value={`${profitMargin}%`}
+                    readOnly
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-900 cursor-not-allowed"
+                    placeholder="Auto-calculated"
                   />
-                  {errors.costFromHP && (
-                    <p className="mt-1 text-sm text-red-600">{errors.costFromHP}</p>
-                  )}
+                  <Calculator className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 </div>
-
-                <div>
-                  <label htmlFor="sellingPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                    Selling Price (JD)
-                  </label>
-                  {user.permissions?.canViewSellingPrice ? (
-                    <FormattedNumberInput
-                      value={formData.sellingPrice}
-                      onChange={(value) => setFormData(prev => ({ ...prev, sellingPrice: value.toString() }))}
-                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.sellingPrice ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter selling price"
-                      disabled={!user.permissions?.canEditTenders}
-                      id="sellingPrice"
-                      name="sellingPrice"
-                    />
-                  ) : (
-                    <div className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500">
-                      Selling price information is restricted
-                    </div>
-                  )}
-                  {errors.sellingPrice && user.permissions?.canViewSellingPrice && (
-                    <p className="mt-1 text-sm text-red-600">{errors.sellingPrice}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Profit Margin
-                  </label>
-                  {user.permissions?.canViewProfitMargin ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="flex-1 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md">
-                        <span className={`text-lg font-semibold ${parseFloat(profitMargin) < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                          {profitMargin}%
-                        </span>
-                      </div>
-                      <Calculator className="h-5 w-5 text-gray-400" />
-                    </div>
-                  ) : (
-                    <div className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500">
-                      Profit margin information is restricted
-                    </div>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500">
-                    {user.permissions?.canViewProfitMargin ? 'Automatically calculated' : 'Access restricted'}
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  Automatically calculated: (Selling Price - Cost) / Cost × 100
+                </p>
               </div>
-            )}
-
-            {/* For users without cost viewing permission, show only allowed fields */}
-            {!safeUser.permissions.canViewCostFromHP && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {user.permissions?.canViewSellingPrice && (
-                  <div>
-                    <label htmlFor="sellingPrice" className="block text-sm font-medium text-gray-700 mb-2">
-                      Selling Price (JD)
-                    </label>
-                    <FormattedNumberInput
-                      value={formData.sellingPrice}
-                      onChange={(value) => setFormData(prev => ({ ...prev, sellingPrice: value.toString() }))}
-                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
-                        errors.sellingPrice ? 'border-red-300' : 'border-gray-300'
-                      }`}
-                      placeholder="Enter selling price"
-                      disabled={!user.permissions?.canEditTenders}
-                      id="sellingPrice"
-                      name="sellingPrice"
-                    />
-                    {errors.sellingPrice && (
-                      <p className="mt-1 text-sm text-red-600">{errors.sellingPrice}</p>
-                    )}
-                  </div>
-                )}
-
-                {!user.permissions?.canViewSellingPrice && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-5 w-5 text-gray-600" />
-                      <h3 className="font-semibold text-gray-900">Financial Information Restricted</h3>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      You do not have permission to view financial information for this tender.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Items Section */}
@@ -716,7 +660,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           onChange={(e) => updateItem(item.id, 'description', e.target.value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                           placeholder="Enter item description"
-                          disabled={!user.permissions?.canEditTenders}
+                          
                         />
                       </div>
                       <div>
@@ -729,7 +673,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           value={item.quantity}
                           onChange={(e) => updateItem(item.id, 'quantity', parseInt(e.target.value) || 1)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          disabled={!user.permissions?.canEditTenders}
+                          
                         />
                       </div>
                       <div>
@@ -740,7 +684,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           value={item.costFromHP}
                           onChange={(value) => updateItem(item.id, 'costFromHP', value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          disabled={!user.permissions?.canEditTenders}
+                          
                           placeholder="Enter cost"
                         />
                       </div>
@@ -752,7 +696,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           value={item.sellingPrice}
                           onChange={(value) => updateItem(item.id, 'sellingPrice', value)}
                           className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                          disabled={!user.permissions?.canEditTenders}
+                          
                           placeholder="Enter selling price"
                         />
                       </div>
@@ -768,7 +712,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                           value={item.profitMargin}
                           onChange={(e) => updateItem(item.id, 'profitMargin', parseFloat(e.target.value) || 0)}
                           className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50 ${item.profitMargin < 0 ? 'text-red-600 font-semibold' : ''}`}
-                          disabled={true}
+                          
                           readOnly
                         />
                       </div>
@@ -832,7 +776,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter OPG number"
-                    disabled={!user.permissions?.canEditTenders}
+                    
                   />
                 </div>
 
@@ -848,7 +792,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Enter IQ number"
-                    disabled={!user.permissions?.canEditTenders}
+                    
                   />
                 </div>
               </div>
@@ -872,7 +816,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter any additional notes or comments..."
-                disabled={!user.permissions?.canEditTenders}
+                
               />
             </div>
           </div>
@@ -1095,7 +1039,7 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             </button>
             <button
               type="submit"
-              disabled={isLoading}
+              
               className="flex items-center space-x-2 px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save className="h-4 w-4" />

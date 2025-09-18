@@ -17,8 +17,12 @@ const ensureUploadsDir = () => {
 };
 
 const isLocalEnvironment = () => {
-  // Use file system for local production and Railway (but not Vercel)
-  return process.env.NODE_ENV === 'production' && !process.env.VERCEL && !process.env.NETLIFY;
+  // Use file system for Railway persistent storage, local production, but not Vercel
+  return (
+    process.env.NODE_ENV === 'production' && 
+    !process.env.VERCEL && 
+    !process.env.NETLIFY
+  ) || process.env.RAILWAY_ENVIRONMENT;
 };
 
 export async function GET(
