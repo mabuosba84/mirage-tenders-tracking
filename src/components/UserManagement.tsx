@@ -18,7 +18,7 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { createUser, updateUser, deleteUser, resetUserPassword } from '@/utils/userStorage'
+import { addUser, updateUser, deleteUser, resetUserPassword, getAllUsers } from '@/utils/userStorage'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
 import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
