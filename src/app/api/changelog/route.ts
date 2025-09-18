@@ -44,7 +44,7 @@ const writeChangeLogs = (logs: ChangeLogEntry[]): void => {
 };
 
 // Add a new change log entry
-export const addChangeLogEntry = (entry: Omit<ChangeLogEntry, 'id' | 'timestamp'>): ChangeLogEntry => {
+const addChangeLogEntry = (entry: Omit<ChangeLogEntry, 'id' | 'timestamp'>): ChangeLogEntry => {
   const logs = readChangeLogs();
   
   const newEntry: ChangeLogEntry = {
@@ -155,7 +155,6 @@ export async function POST(request: NextRequest) {
     // Add IP address and user agent if available
     const ipAddress = request.headers.get('x-forwarded-for') || 
                      request.headers.get('x-real-ip') || 
-                     request.ip || 
                      'unknown';
     
     const userAgent = request.headers.get('user-agent') || 'unknown';
