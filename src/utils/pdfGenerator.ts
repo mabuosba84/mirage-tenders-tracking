@@ -6,16 +6,13 @@ const encodePdfText = (text: string): string => {
   if (!text) return ''
   
   try {
-    // Check if text contains Arabic characters
+    // For Arabic text, try to handle encoding issues
     const hasArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(text)
     
     if (hasArabic) {
-      // For Arabic text, ensure proper UTF-8 encoding
-      // Convert to UTF-8 bytes and back to handle encoding properly
-      const encoder = new TextEncoder()
-      const decoder = new TextDecoder('utf-8')
-      const bytes = encoder.encode(text)
-      return decoder.decode(bytes)
+      // Convert Arabic text to a format that can be displayed
+      // For now, return a placeholder that indicates Arabic content
+      return `[Arabic: ${text.length} chars]`
     }
     
     return text
@@ -25,24 +22,15 @@ const encodePdfText = (text: string): string => {
   }
 }
 
-// Configure jsPDF with UTF-8 support
-const createPdfDocument = async () => {
-  const jsPDF = (await import('jspdf')).default
-  
-  // Create document
-  const doc = new jsPDF('portrait', 'pt', 'a4')
-  
-  return doc
-}
-
 // This function will be loaded dynamically on the client side
 export const generateSummaryReport = async (filteredTenders: Lead[], user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
+    const jsPDF = (await import('jspdf')).default
     const { default: autoTable } = await import('jspdf-autotable')
     
-    const doc = await createPdfDocument()
+    const doc = new jsPDF()
     
     // Header
     doc.setFontSize(20)
@@ -137,7 +125,9 @@ export const generateTenderPreviewPDF = async (tender: Lead, user: User) => {
   if (typeof window === 'undefined') return null
   
   try {
-    const doc = await createPdfDocument()
+    const jsPDF = (await import('jspdf')).default
+    
+    const doc = new jsPDF()
     let yPosition = 20
     
     // Helper function to format dates
@@ -329,9 +319,10 @@ export const generateDetailedReport = async (filteredTenders: Lead[], user: User
   if (typeof window === 'undefined') return null
   
   try {
+    const jsPDF = (await import('jspdf')).default
     const { default: autoTable } = await import('jspdf-autotable')
     
-    const doc = await createPdfDocument()
+    const doc = new jsPDF()
     
     // Header
     doc.setFontSize(20)
@@ -490,9 +481,10 @@ export const generateFinancialReport = async (filteredTenders: Lead[], user: Use
   if (typeof window === 'undefined') return null
   
   try {
+    const jsPDF = (await import('jspdf')).default
     const { default: autoTable } = await import('jspdf-autotable')
     
-    const doc = await createPdfDocument()
+    const doc = new jsPDF()
     
     // Check permissions first
     const hasAnyFinancialPermission = user.permissions?.canViewCostFromVendor || 
@@ -620,9 +612,10 @@ export const generateResponseTimeReport = async (filteredTenders: Lead[], user: 
   if (typeof window === 'undefined') return null
   
   try {
+    const jsPDF = (await import('jspdf')).default
     const { default: autoTable } = await import('jspdf-autotable')
     
-    const doc = await createPdfDocument()
+    const doc = new jsPDF()
     
     // Header
     doc.setFontSize(20)
