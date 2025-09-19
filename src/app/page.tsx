@@ -27,7 +27,14 @@ export default function Home() {
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // First, try to sync data from server for cross-domain consistency
+        // First, load the current user from centralized storage (PRIORITY)
+        const savedUser = await loadCurrentUserFromStorage()
+        if (savedUser) {
+          setUser(savedUser)
+          console.log('✅ Loaded user from storage:', savedUser.username, savedUser.role)
+        }
+
+        // Then, try to sync data from server for cross-domain consistency
         try {
           const response = await fetch('/api/sync')
           if (response.ok) {
@@ -47,11 +54,6 @@ export default function Home() {
           console.warn('⚠️ Server sync failed, using central storage:', error)
         }
 
-        // Then load the current user from centralized storage
-        const savedUser = await loadCurrentUserFromStorage()
-        if (savedUser) {
-          setUser(savedUser)
-        }
       } catch (error) {
         console.error('Error loading user from centralized storage:', error)
         await removeCurrentUserFromStorage() // Clean up invalid data

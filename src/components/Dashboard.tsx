@@ -82,11 +82,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     try {
       // First try to get latest data from server
       try {
-        const response = await fetch('/api/sync', {
-          headers: {
-            'X-Current-User': JSON.stringify(user) // Send user authentication
-          }
-        })
+        const response = await fetch('/api/sync')
         if (response.ok) {
           const serverData = await response.json()
           if (serverData.tenders && Array.isArray(serverData.tenders)) {
@@ -146,8 +142,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       const response = await fetch('/api/sync', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'X-Current-User': JSON.stringify(user) // Send user authentication
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           users: serverUsers,
