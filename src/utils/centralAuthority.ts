@@ -122,6 +122,30 @@ const CENTRAL_USER_AUTHORITY: AuthUser[] = [
       canExportData: true,
       canViewOptionalFields: true
     }
+  },
+  {
+    id: '5',
+    username: 'AbuOsba',
+    password: 'password123',
+    role: 'admin',
+    name: 'Mohammad AbuOsba',
+    email: 'm.abuosba@miragebs.com',
+    isActive: true,
+    createdAt: new Date('2025-09-19T00:00:00.000Z'),
+    updatedAt: new Date('2025-09-19T00:00:00.000Z'),
+    lastLogin: undefined,
+    permissions: {
+      canViewCostFromVendor: true,
+      canViewSellingPrice: true,
+      canViewProfitMargin: true,
+      canViewTenderItems: true,
+      canEditTenders: true,
+      canDeleteTenders: true,
+      canViewFinancialReports: true,
+      canManageUsers: true,
+      canExportData: true,
+      canViewOptionalFields: true
+    }
   }
 ];
 
