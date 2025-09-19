@@ -23,7 +23,8 @@ import {
   updateUserInCentralAuthority,
   deleteUserFromCentralAuthority,
   getAllAuthoritativeUsers, 
-  getAuthoritativeUser 
+  getAuthoritativeUser,
+  reloadUsersFromServer 
 } from '@/utils/centralAuthority'
 import { saveCurrentUserToStorage } from '@/utils/centralStorage'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
@@ -80,23 +81,44 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
   const [userUpdateSuccess, setUserUpdateSuccess] = useState(false)
   const [passwordResetSuccess, setPasswordResetSuccess] = useState(false)
 
-  // Load users from ONLY central authority - no other sources
+  // BULLETPROOF user loading from server and central authority
   useEffect(() => {
-    const loadUsers = () => {
-      console.log('🔄 LOADING USERS: Using ONLY central authority');
+    const loadUsers = async () => {
+      console.log('🔄 BULLETPROOF LOAD: Starting user load');
+      
+      // Try to reload from server first
+      const serverSuccess = await reloadUsersFromServer();
+      if (serverSuccess) {
+        console.log('✅ BULLETPROOF LOAD: Server reload successful');
+      } else {
+        console.warn('⚠️ BULLETPROOF LOAD: Server reload failed, using local data');
+      }
+      
+      // Load from central authority (now updated from server if successful)
       const authoritativeUsers = getAllAuthoritativeUsers();
-      console.log('✅ CENTRAL AUTHORITY: Loaded', authoritativeUsers.length, 'users');
+      console.log('✅ BULLETPROOF LOAD: Loaded', authoritativeUsers.length, 'users');
       setUsers(authoritativeUsers);
     };
+    
     loadUsers();
   }, [])
 
-  // Helper function to refresh users from central authority ONLY
-  const refreshUsersFromCentralAuthority = () => {
-    console.log('🔄 REFRESH: Loading fresh data from central authority');
+  // BULLETPROOF refresh function that forces server sync
+  const refreshUsersFromCentralAuthority = async () => {
+    console.log('🔄 BULLETPROOF REFRESH: Forcing server sync and refresh');
+    
+    // Force reload from server
+    const serverSuccess = await reloadUsersFromServer();
+    if (serverSuccess) {
+      console.log('✅ BULLETPROOF REFRESH: Server sync successful');
+    } else {
+      console.warn('⚠️ BULLETPROOF REFRESH: Server sync failed');
+    }
+    
+    // Refresh from central authority
     const freshUsers = getAllAuthoritativeUsers();
     setUsers(freshUsers);
-    console.log('✅ REFRESH: Loaded', freshUsers.length, 'users from central authority');
+    console.log('✅ BULLETPROOF REFRESH: Loaded', freshUsers.length, 'users');
   };
 
   const resetForm = () => {
@@ -258,9 +280,16 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         updatedAt: new Date()
       }
 
-      // Update user in CENTRAL AUTHORITY ONLY
-      updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
-      console.log('✅ USER UPDATED: Successfully updated in central authority:', updatedUser.username);
+      // BULLETPROOF UPDATE: Use new async update system
+      const updateSuccess = await updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
+      
+      if (!updateSuccess) {
+        console.error('❌ USER UPDATE FAILED: Could not save user changes');
+        alert('Failed to save user changes. Please try again.');
+        return;
+      }
+      
+      console.log('✅ BULLETPROOF UPDATE: User successfully updated:', updatedUser.username, 'Role:', updatedUser.role);
       
       // Clear user sessions if role changed to ensure immediate role update
       if (editingUser.role !== updatedUser.role) {
@@ -297,8 +326,8 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         window.dispatchEvent(new Event('userUpdated'))
       }
       
-      // Refresh from central authority
-      refreshUsersFromCentralAuthority();
+      // Refresh from central authority with bulletproof server sync
+      await refreshUsersFromCentralAuthority();
       
       // Show success state for UI feedback
       setUserUpdateSuccess(true);
