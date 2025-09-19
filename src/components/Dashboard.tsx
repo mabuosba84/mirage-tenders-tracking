@@ -32,6 +32,40 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     initializeUserSync()
   }, [])
 
+  // AUTOMATIC RAILWAY SYNC - Background refresh every 30 seconds
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      console.log('🔄 AUTO-SYNC: Background refresh from Railway');
+      loadTenders();
+    }, 30000); // 30 seconds
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // IMMEDIATE RAILWAY SYNC - When user becomes active (focus/visibility)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 PAGE FOCUS: Refreshing from Railway');
+        loadTenders();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔄 WINDOW FOCUS: Refreshing from Railway');
+      loadTenders();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
+
   const initializeUserSync = async () => {
     try {
       // First get current leads from centralized storage to preserve them
@@ -80,41 +114,68 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const loadTenders = async () => {
     try {
-      console.log('🔄 Loading tenders - 100% CENTRALIZED MODE');
+      console.log('🔄 Loading tenders - 100% RAILWAY CENTRALIZED MODE');
       
-      // ONLY load from server - NO localStorage fallback
-      const response = await fetch('/api/sync');
+      // FORCE reload from Railway server every time
+      const response = await fetch('/api/sync', {
+        method: 'GET',
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      
       if (response.ok) {
         const serverData = await response.json();
+        console.log('📥 Railway server response:', serverData);
+        
         if (serverData.tenders && Array.isArray(serverData.tenders)) {
-          console.log('📥 Loaded tenders from server (CENTRALIZED):', serverData.tenders.length);
+          console.log('✅ FOUND TENDERS ON RAILWAY:', serverData.tenders.length);
           setTenders(serverData.tenders);
+          setMessage(`✅ Loaded ${serverData.tenders.length} tenders from Railway`);
           return;
+        } else {
+          console.error('❌ No tenders array in Railway response:', serverData);
         }
+      } else {
+        console.error('❌ Railway server response failed:', response.status, response.statusText);
       }
       
-      // If server fails, show error - no local fallback
-      console.error('❌ Server failed and no local fallback allowed in centralized mode');
+      // If we get here, something is wrong with Railway connection
+      console.error('❌ CRITICAL: Cannot connect to Railway data');
       setTenders([]);
+      setMessage('❌ Cannot load data from Railway server');
       
     } catch (error) {
-      console.error('❌ Error loading tenders:', error);
+      console.error('❌ Error loading from Railway:', error);
       setTenders([]);
+      setMessage('❌ Railway connection error');
     }
   }
 
   const saveTendersLocal = async (tenderData: Lead[]) => {
     try {
-      console.log('💾 Saving tenders - 100% CENTRALIZED MODE');
+      console.log('💾 Saving to Railway - 100% CENTRALIZED MODE');
       
-      // ONLY save to server - NO localStorage
-      await syncTendersToServer(tenderData);
+      // Save to Railway server
+      const success = await syncTendersToServer(tenderData);
       
-      // Immediately reload from server to ensure sync
-      await loadTenders();
+      if (success) {
+        // AUTOMATIC SYNC: Refresh from Railway after save
+        console.log('🔄 AUTO-SYNC: Reloading from Railway after save');
+        setTimeout(() => {
+          loadTenders(); // Auto-reload from Railway
+        }, 1000); // 1 second delay to ensure Railway processed the save
+        
+        // BACKGROUND SYNC: Also sync again after 5 seconds to be sure
+        setTimeout(() => {
+          loadTenders();
+        }, 5000);
+      }
       
     } catch (error) {
-      console.error('❌ Error saving to centralized storage:', error);
+      console.error('❌ Error saving to Railway:', error);
+      setMessage('❌ Failed to save to Railway');
     }
   }
 
@@ -286,6 +347,14 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       />
       
       <main className="container mx-auto px-4 py-8">
+        {/* Railway Sync Status */}
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+          <div>
+            <h3 className="text-sm font-medium text-blue-800">🚀 Railway Production Mode - Auto Sync Active</h3>
+            <p className="text-xs text-blue-600">Automatically syncing with Railway every 30 seconds • {tenders.length} leads loaded</p>
+          </div>
+        </div>
+
         {saveMessage && (
           <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
             {saveMessage}
