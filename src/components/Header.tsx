@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { User } from '@/types'
 import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X, History } from 'lucide-react'
 import { logChange } from '@/utils/changeLogUtils'
+import Image from 'next/image'
 
 interface HeaderProps {
   user: User
@@ -30,13 +31,15 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
   const [showSettings, setShowSettings] = useState(false)
   const [logoUrl, setLogoUrl] = useState<string | null>(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('companyLogo')
+      const customLogo = localStorage.getItem('companyLogo')
+      // Return custom logo if available, otherwise default to Mirage logo
+      return customLogo || '/mirage-logo.png'
     }
-    return null
+    return '/mirage-logo.png' // Default Mirage logo for server-side rendering
   })
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Sync logo from central storage on component mount
+  // Force logo sync whenever user changes or component mounts
   useEffect(() => {
     const syncLogoFromCentral = async () => {
       try {
@@ -48,15 +51,27 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
         const result = await response.json()
         
         if (result.success && result.logo && result.logo.trim() !== '') {
-          // Only update if we got a non-empty logo and it's different from current
-          if (!logoUrl || logoUrl !== result.logo) {
+          // Update with custom logo from central storage
+          if (logoUrl !== result.logo) {
             setLogoUrl(result.logo)
             localStorage.setItem('companyLogo', result.logo)
-            console.log('✅ Logo synced from central storage')
+            console.log('✅ Custom logo synced from central storage')
+          }
+        } else {
+          // No custom logo in central storage, ensure we're using default Mirage logo
+          if (logoUrl !== '/mirage-logo.png') {
+            setLogoUrl('/mirage-logo.png')
+            localStorage.removeItem('companyLogo') // Clear any old custom logo
+            console.log('✅ Using default Mirage logo (no custom logo found)')
           }
         }
       } catch (error) {
         console.error('❌ Failed to sync logo from central storage:', error)
+        // Fallback to default Mirage logo on error
+        if (logoUrl !== '/mirage-logo.png') {
+          setLogoUrl('/mirage-logo.png')
+          console.log('✅ Fallback to default Mirage logo due to sync error')
+        }
       }
     }
     
@@ -76,7 +91,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
     return () => {
       window.removeEventListener('logoSynced', handleLogoSynced as EventListener)
     }
-  }, []) // Only run once on mount
+  }, [user.id]) // Re-sync when user changes (new login)
 
   const navItems = [
     { id: 'overview' as const, label: 'Overview', icon: Home },
@@ -129,7 +144,8 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
   }
 
   const handleRemoveLogo = async () => {
-    setLogoUrl(null)
+    // Reset to default Mirage logo instead of null
+    setLogoUrl('/mirage-logo.png')
     localStorage.removeItem('companyLogo')
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
@@ -145,7 +161,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
           logoData: ''
         })
       })
-      console.log('✅ Logo removal synced to central storage')
+      console.log('✅ Custom logo removed, reset to default Mirage logo')
     } catch (error) {
       console.error('❌ Failed to sync logo removal:', error)
     }
@@ -155,27 +171,27 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
     <header className="bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex justify-between items-center h-20">
-          {/* Logo Section */}
+          {/* Logo Section - Always show either custom or default Mirage logo */}
           <div className="flex items-center space-x-4">
-            {logoUrl ? (
-              <div className="h-12 w-auto flex items-center justify-center">
-                <img 
-                  src={logoUrl} 
-                  alt="Company Logo" 
-                  className="h-12 w-auto max-w-[200px] object-contain"
-                />
-              </div>
-            ) : (
-              <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">M</span>
-                </div>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900">Mirage Business Solutions</h1>
-                  <p className="text-sm text-blue-600 font-medium">Offering System</p>
-                </div>
-              </div>
-            )}
+            <div className="h-12 w-auto flex items-center justify-center">
+              <Image
+                src={logoUrl || '/mirage-logo.png'}
+                alt="Mirage Business Solutions"
+                width={128}
+                height={96}
+                className="h-12 w-auto max-w-[200px] object-contain"
+                priority
+                onError={(e) => {
+                  // Fallback to default Mirage logo if custom logo fails to load
+                  console.warn('❌ Logo failed to load, falling back to default:', logoUrl)
+                  setLogoUrl('/mirage-logo.png')
+                }}
+              />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Mirage Business Solutions</h1>
+              <p className="text-sm text-blue-600 font-medium">Offering System</p>
+            </div>
           </div>
 
           {/* Navigation */}
