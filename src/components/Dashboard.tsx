@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { User, Lead } from '@/types'
 import { calculateResponseTime } from '@/utils/dateCalculations'
 import { loadTendersFromStorage, saveTendersToStorage } from '@/utils/centralStorage'
-import { getAllUsers } from '@/utils/userStorage'
+import { getAllAuthoritativeUsers } from '@/utils/centralAuthority'
 import Header from './Header'
 import TenderForm from './TenderForm'
 import TenderList from './TenderList'
@@ -37,12 +37,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       // First get current leads from localStorage to preserve them
       const currentTenders = JSON.parse(localStorage.getItem('mirage_tenders') || '[]')
       
-      // Sync current users to server on dashboard load
-      const currentUsers = getAllUsers()
+      // Sync current users to server on dashboard load from CENTRAL AUTHORITY ONLY
+      const currentUsers = getAllAuthoritativeUsers()
       const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
       
       // Create server-compatible user objects with passwords
-      const serverUsers = currentUsers.map(user => ({
+      const serverUsers = currentUsers.map((user: User) => ({
         ...user,
         password: credentials[user.username] || 'defaultPassword123',
         permissions: {
@@ -121,11 +121,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const syncTendersToServer = async (tenderData: Lead[]) => {
     try {
-      const currentUsers = getAllUsers()
+      const currentUsers = getAllAuthoritativeUsers()
       const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
       
       // Create server-compatible user objects
-      const serverUsers = currentUsers.map(user => ({
+      const serverUsers = currentUsers.map((user: User) => ({
         ...user,
         password: credentials[user.username] || 'defaultPassword123',
         permissions: {

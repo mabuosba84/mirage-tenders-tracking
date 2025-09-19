@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { getAllAuthoritativeUsers } from '@/utils/centralAuthority'
 import { User, ChangeLogEntry, ChangeLogFilter, ChangeLogAction, ChangeLogEntity } from '@/types'
 import { 
   History, 
@@ -272,8 +273,8 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
   }
 
   const getAllUsers = () => {
-    const users = JSON.parse(localStorage.getItem('mirage_users') || '[]')
-    return users
+    // Use CENTRAL AUTHORITY ONLY - no more localStorage confusion
+    return getAllAuthoritativeUsers()
   }
 
   // Pagination

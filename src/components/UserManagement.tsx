@@ -18,11 +18,14 @@ import {
   Save,
   X
 } from 'lucide-react'
-import { addUser, updateUser, deleteUser, resetUserPassword, getAllUsers } from '@/utils/userStorage'
-import { addUserSecure, updateUserSecure, resetPasswordSecure, deleteUserSecure } from '@/utils/secureUserManagement'
-import { getAllAuthoritativeUsers, getAuthoritativeUser } from '@/utils/centralAuthority'
+import { 
+  addUserToCentralAuthority, 
+  updateUserInCentralAuthority,
+  deleteUserFromCentralAuthority,
+  getAllAuthoritativeUsers, 
+  getAuthoritativeUser 
+} from '@/utils/centralAuthority'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
-import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
 interface UserManagementProps {
   currentUser: User
@@ -72,101 +75,24 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<any>({})
 
-  // Load users from centralized storage
+  // Load users from ONLY central authority - no other sources
   useEffect(() => {
-    const loadUsers = async () => {
-      try {
-        // First try to get all authoritative users (they always have correct permissions)
-        const authoritativeUsers = getAllAuthoritativeUsers()
-        if (authoritativeUsers && authoritativeUsers.length > 0) {
-          console.log('✅ Loading users from central authority:', authoritativeUsers.length)
-          setUsers(authoritativeUsers)
-          
-          // Sync these to localStorage for consistency
-          localStorage.setItem('mirage_users', JSON.stringify(authoritativeUsers))
-          return
-        }
-
-        // Fallback to centralized storage
-        const centralUsers = await loadUsersFromStorage()
-        if (centralUsers && centralUsers.length > 0) {
-          setUsers(centralUsers)
-        } else {
-          // Final fallback to local storage users
-          setUsers(getAllUsers())
-        }
-      } catch (error) {
-        console.error('Error loading users from central authority:', error)
-        setUsers(getAllUsers())
-      }
-    }
-    loadUsers()
+    const loadUsers = () => {
+      console.log('🔄 LOADING USERS: Using ONLY central authority');
+      const authoritativeUsers = getAllAuthoritativeUsers();
+      console.log('✅ CENTRAL AUTHORITY: Loaded', authoritativeUsers.length, 'users');
+      setUsers(authoritativeUsers);
+    };
+    loadUsers();
   }, [])
 
-  // Helper function to sync users to centralized storage
-  const syncUsersToStorage = async () => {
-    try {
-      const currentUsers = getAllUsers()
-      await saveUsersToStorage(currentUsers)
-      
-      // Also push directly to server API for immediate sync with passwords
-      try {
-        const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
-        
-        // Create server-compatible user objects with passwords
-        const serverUsers = currentUsers.map(user => ({
-          ...user,
-          password: credentials[user.username] || 'defaultPassword123', // Include password for server
-          permissions: {
-            canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
-            canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
-            canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
-            canViewTenderItems: user.permissions?.canViewTenderItems || true,
-            canEditTenders: user.permissions?.canEditTenders || true,
-            canDeleteTenders: user.permissions?.canDeleteTenders || false,
-            canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
-            canManageUsers: user.permissions?.canManageUsers || false,
-            canExportData: user.permissions?.canExportData || false,
-            canViewOptionalFields: user.permissions?.canViewOptionalFields || true
-          }
-        }))
-        
-        // CRITICAL: Get existing tenders to prevent data loss
-        let existingTenders = []
-        try {
-          const existingDataResponse = await fetch('/api/sync', { method: 'GET' })
-          if (existingDataResponse.ok) {
-            const existingData = await existingDataResponse.json()
-            existingTenders = existingData.tenders || []
-            console.log('📥 Preserving existing tenders:', existingTenders.length)
-          }
-        } catch (error) {
-          console.warn('⚠️ Could not fetch existing tenders, proceeding with empty array')
-        }
-        
-        const response = await fetch('/api/sync', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            users: serverUsers, // Send users with passwords
-            tenders: existingTenders // PRESERVE existing tenders instead of clearing them
-          }),
-        })
-        
-        if (response.ok) {
-          console.log('✅ Users synced to server successfully with passwords')
-        } else {
-          console.log('⚠️ Server sync failed but central storage saved')
-        }
-      } catch (apiError) {
-        console.error('API sync error (but central storage saved):', apiError)
-      }
-    } catch (error) {
-      console.error('Error syncing users to central storage:', error)
-    }
-  }
+  // Helper function to refresh users from central authority ONLY
+  const refreshUsersFromCentralAuthority = () => {
+    console.log('🔄 REFRESH: Loading fresh data from central authority');
+    const freshUsers = getAllAuthoritativeUsers();
+    setUsers(freshUsers);
+    console.log('✅ REFRESH: Loaded', freshUsers.length, 'users from central authority');
+  };
 
   const resetForm = () => {
     setUserForm({
@@ -268,14 +194,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         permissions: userForm.permissions
       }
 
-      // Add user to storage with password - SECURE VERSION
-      const success = await addUserSecure(newUser, userForm.password)
-      
-      if (!success) {
-        setErrors({ general: 'Failed to add user to central authority' })
-        setIsLoading(false)
-        return
-      }
+      // Add user to CENTRAL AUTHORITY ONLY
+      addUserToCentralAuthority(newUser, userForm.password);
+      console.log('✅ USER ADDED: Successfully added to central authority:', newUser.username);
       
       // Log the user creation for audit trail
       try {
@@ -290,12 +211,8 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         // Continue even if logging fails
       }
       
-      // Sync to centralized storage
-      await syncUsersToStorage()
-      
-      // Update local state from central authority (not local storage)
-      const refreshedUsers = getAllAuthoritativeUsers()
-      setUsers(refreshedUsers)
+      // Refresh from central authority
+      refreshUsersFromCentralAuthority();
       setShowAddUser(false)
       resetForm()
       
@@ -336,14 +253,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         updatedAt: new Date()
       }
 
-      // Update user in storage - SECURE VERSION
-      const success = await updateUserSecure(updatedUser, userForm.password || undefined)
-      
-      if (!success) {
-        setErrors({ general: 'Failed to update user in central authority' })
-        setIsLoading(false)
-        return
-      }
+      // Update user in CENTRAL AUTHORITY ONLY
+      updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
+      console.log('✅ USER UPDATED: Successfully updated in central authority:', updatedUser.username);
       
       // Log the user update for audit trail
       try {
@@ -359,9 +271,6 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         // Continue even if logging fails
       }
       
-      // Sync to centralized storage
-      await syncUsersToStorage()
-      
       // If the updated user is the current user, update localStorage
       if (updatedUser.id === currentUser.id) {
         localStorage.setItem('currentUser', JSON.stringify(updatedUser))
@@ -369,9 +278,8 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         window.dispatchEvent(new Event('userUpdated'))
       }
       
-      // Update local state from central authority (not local storage)
-      const refreshedUsers = getAllAuthoritativeUsers()
-      setUsers(refreshedUsers)
+      // Refresh from central authority
+      refreshUsersFromCentralAuthority();
       setEditingUser(null)
       resetForm()
       
@@ -411,41 +319,42 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       // Get user data before deletion for logging
       const userToDelete = users.find(u => u.id === userId)
       
-      // Delete user from storage
-      deleteUser(userId)
-      
-      // Log the user deletion for audit trail
-      if (userToDelete) {
-        try {
-          await logUserChange(
-            currentUser,
-            'DELETE',
-            userToDelete
-          );
-          console.log('✅ User deletion logged successfully');
-        } catch (logError) {
-          console.error('❌ Failed to log user deletion:', logError);
-          // Continue even if logging fails
-        }
-      }
-      
-      // Sync to centralized storage
-      await syncUsersToStorage()
-      
-      // Update local state from central authority (not local storage)
-      const refreshedUsers = getAllAuthoritativeUsers()
-      setUsers(refreshedUsers)
-      
-      // Trigger automatic sync after deleting user
-      if (onAutoSync) {
-        setTimeout(async () => {
+      // Delete user from CENTRAL AUTHORITY ONLY
+      const success = deleteUserFromCentralAuthority(userId);
+      if (success) {
+        console.log('✅ USER DELETED: Successfully removed from central authority');
+        
+        // Log the user deletion for audit trail
+        if (userToDelete) {
           try {
-            console.log('🔄 Auto-sync triggered after deleting user')
-            await onAutoSync()
-          } catch (error) {
-            console.error('❌ Auto-sync failed after deleting user:', error)
+            await logUserChange(
+              currentUser,
+              'DELETE',
+              userToDelete
+            );
+            console.log('✅ User deletion logged successfully');
+          } catch (logError) {
+            console.error('❌ Failed to log user deletion:', logError);
+            // Continue even if logging fails
           }
-        }, 500)
+        }
+        
+        // Refresh from central authority
+        refreshUsersFromCentralAuthority();
+        
+        // Trigger automatic sync after deleting user
+        if (onAutoSync) {
+          setTimeout(async () => {
+            try {
+              console.log('🔄 Auto-sync triggered after deleting user')
+              await onAutoSync()
+            } catch (error) {
+              console.error('❌ Auto-sync failed after deleting user:', error)
+            }
+          }, 500)
+        }
+      } else {
+        alert('Failed to delete user')
       }
     } catch (error) {
       console.error('Error deleting user:', error)
@@ -472,15 +381,12 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           updatedAt: new Date() 
         }
         
-        // Update user in storage
-        updateUser(updatedUser)
+        // Update user in CENTRAL AUTHORITY ONLY
+        updateUserInCentralAuthority(updatedUser);
+        console.log('✅ USER STATUS UPDATED: Successfully updated in central authority:', updatedUser.username);
         
-        // Sync to centralized storage
-        await syncUsersToStorage()
-        
-        // Update local state from central authority
-        const refreshedUsers = getAllAuthoritativeUsers()
-        setUsers(refreshedUsers)
+        // Refresh from central authority
+        refreshUsersFromCentralAuthority();
       }
     } catch (error) {
       console.error('Error updating user status:', error)
@@ -498,18 +404,15 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           await new Promise(resolve => setTimeout(resolve, 1000))
           const user = users.find(u => u.id === passwordReset.userId)
       if (user) {
-        // Reset password in storage - SECURE VERSION
-        const success = await resetPasswordSecure(user.username, passwordReset.newPassword)
+        // Reset password in CENTRAL AUTHORITY ONLY
+        updateUserInCentralAuthority(user, passwordReset.newPassword);
+        console.log('✅ PASSWORD RESET: Successfully updated in central authority:', user.username);
         
-        if (success) {
-          // Sync to centralized storage
-          await syncUsersToStorage()
-          alert('Password has been reset successfully!')
-          setShowPasswordReset(null)
-          setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' })
-        } else {
-          alert('Failed to reset password. User not found.')
-        }
+        alert('Password has been reset successfully!')
+        setShowPasswordReset(null)
+        setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' })
+      } else {
+        alert('User not found.')
       }
     } catch (error) {
       console.error('Error resetting password:', error)

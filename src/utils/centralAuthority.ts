@@ -325,15 +325,24 @@ export const getAllAuthoritativeUsers = (): User[] => {
  * Add new user to central authority (for UserManagement component)
  */
 export const addUserToCentralAuthority = (user: User, password: string): void => {
-  const authUser: AuthUser = { ...user, password };
+  const authUser: AuthUser = { ...user, password, updatedAt: new Date() };
   const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.username === user.username);
   if (existingIndex >= 0) {
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
+    console.log('✅ CENTRAL AUTHORITY: Updated existing user:', user.username);
   } else {
     CENTRAL_USER_AUTHORITY.push(authUser);
+    console.log('✅ CENTRAL AUTHORITY: Added new user:', user.username);
   }
   
-  // Auto-sync to all sources
+  // IMMEDIATELY sync to localStorage for persistence
+  const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+    const { password: _, ...userWithoutPassword } = u;
+    return userWithoutPassword;
+  });
+  localStorage.setItem('mirage_users', JSON.stringify(allUsers));
+  
+  // Auto-sync to server
   synchronizeUserToAllSources(user);
 };
 
@@ -341,16 +350,48 @@ export const addUserToCentralAuthority = (user: User, password: string): void =>
  * Update user in central authority
  */
 export const updateUserInCentralAuthority = (user: User, password?: string): void => {
-  const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === user.id);
+  const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === user.id || u.username === user.username);
   if (existingIndex >= 0) {
     const existingUser = CENTRAL_USER_AUTHORITY[existingIndex];
     const authUser: AuthUser = { 
       ...user, 
-      password: password || existingUser.password // Keep existing password if not provided
+      password: password || existingUser.password,
+      updatedAt: new Date()
     };
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
+    console.log('✅ CENTRAL AUTHORITY: Updated user permissions:', user.username, user.permissions);
     
-    // Auto-sync to all sources
+    // IMMEDIATELY sync to localStorage for persistence
+    const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+      const { password: _, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    localStorage.setItem('mirage_users', JSON.stringify(allUsers));
+    
+    // Auto-sync to server
     synchronizeUserToAllSources(user);
+  } else {
+    console.error('❌ CENTRAL AUTHORITY: User not found for update:', user.username);
   }
+};
+
+/**
+ * Delete user from central authority
+ */
+export const deleteUserFromCentralAuthority = (userId: string): boolean => {
+  const userIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === userId);
+  if (userIndex >= 0) {
+    const removedUser = CENTRAL_USER_AUTHORITY.splice(userIndex, 1)[0];
+    console.log('✅ CENTRAL AUTHORITY: Deleted user:', removedUser.username);
+    
+    // IMMEDIATELY sync to localStorage
+    const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+      const { password: _, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    localStorage.setItem('mirage_users', JSON.stringify(allUsers));
+    
+    return true;
+  }
+  return false;
 };
