@@ -5,7 +5,7 @@ interface OnlineUser {
   username: string
   name: string
   role: string
-  lastActivity: Date
+  lastActivity: Date | string  // Can be string when coming from JSON
   isOnline: boolean
 }
 
@@ -16,8 +16,13 @@ let onlineUsersStorage: OnlineUser[] = []
 const cleanupInactiveUsers = () => {
   const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000)
   onlineUsersStorage = onlineUsersStorage.filter(user => {
-    const lastActivity = new Date(user.lastActivity)
-    return lastActivity > fiveMinutesAgo
+    // Ensure lastActivity is a Date object for comparison
+    const lastActivity = typeof user.lastActivity === 'string' 
+      ? new Date(user.lastActivity) 
+      : user.lastActivity
+    
+    // Check if date is valid and not too old
+    return !isNaN(lastActivity.getTime()) && lastActivity > fiveMinutesAgo
   })
 }
 

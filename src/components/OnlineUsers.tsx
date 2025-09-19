@@ -13,7 +13,7 @@ interface OnlineUser {
   username: string
   name: string
   role: string
-  lastActivity: Date
+  lastActivity: Date | string  // Can be string when coming from JSON API
   isOnline: boolean
 }
 
@@ -107,9 +107,17 @@ export default function OnlineUsers({ currentUser }: OnlineUsersProps) {
     }
   }, [currentUser])
 
-  const formatLastSeen = (lastActivity: Date) => {
+  const formatLastSeen = (lastActivity: Date | string) => {
     const now = new Date()
-    const diff = now.getTime() - lastActivity.getTime()
+    // Ensure lastActivity is a Date object
+    const activityDate = typeof lastActivity === 'string' ? new Date(lastActivity) : lastActivity
+    
+    // Check if the date is valid
+    if (isNaN(activityDate.getTime())) {
+      return 'Unknown'
+    }
+    
+    const diff = now.getTime() - activityDate.getTime()
     const minutes = Math.floor(diff / 60000)
     
     if (minutes < 1) return 'Just now'
