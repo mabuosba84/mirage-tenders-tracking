@@ -20,33 +20,58 @@ interface OnlineUser {
 export default function OnlineUsers({ currentUser }: OnlineUsersProps) {
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([])
 
-  // Track user activity and update online status
+  // Track user activity and update online status via centralized API
   useEffect(() => {
-    const updateActivity = () => {
-      const storedUsers = JSON.parse(localStorage.getItem('mirage_online_users') || '[]')
-      const currentTime = new Date()
-      
-      // Update current user's activity
-      const currentUserOnline: OnlineUser = {
-        id: currentUser.id,
-        username: currentUser.username,
-        name: currentUser.name,
-        role: currentUser.role,
-        lastActivity: currentTime,
-        isOnline: true
+    const updateActivity = async () => {
+      try {
+        const currentTime = new Date()
+        
+        // Update current user's activity via API
+        const currentUserOnline: OnlineUser = {
+          id: currentUser.id,
+          username: currentUser.username,
+          name: currentUser.name,
+          role: currentUser.role,
+          lastActivity: currentTime,
+          isOnline: true
+        }
+
+        // Send heartbeat to server API to update online status
+        await fetch('/api/online-users', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'heartbeat',
+            user: currentUserOnline
+          })
+        })
+
+        // Fetch all online users from server
+        const response = await fetch('/api/online-users', {
+          method: 'GET'
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data.success && data.onlineUsers) {
+            setOnlineUsers(data.onlineUsers)
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update online users:', error)
+        // Fallback to localStorage only for current user
+        const currentUserOnline: OnlineUser = {
+          id: currentUser.id,
+          username: currentUser.username,
+          name: currentUser.name,
+          role: currentUser.role,
+          lastActivity: new Date(),
+          isOnline: true
+        }
+        setOnlineUsers([currentUserOnline])
       }
-
-      // Filter out users who haven't been active in the last 5 minutes
-      const fiveMinutesAgo = new Date(currentTime.getTime() - 5 * 60 * 1000)
-      const activeUsers = storedUsers.filter((user: OnlineUser) => {
-        const lastActivity = new Date(user.lastActivity)
-        return lastActivity > fiveMinutesAgo && user.id !== currentUser.id
-      })
-
-      // Add current user and update storage
-      const updatedUsers = [currentUserOnline, ...activeUsers]
-      setOnlineUsers(updatedUsers)
-      localStorage.setItem('mirage_online_users', JSON.stringify(updatedUsers))
     }
 
     // Update activity immediately
@@ -68,10 +93,17 @@ export default function OnlineUsers({ currentUser }: OnlineUsersProps) {
       window.removeEventListener('keypress', handleActivity)
       window.removeEventListener('scroll', handleActivity)
       
-      // Mark current user as offline
-      const storedUsers = JSON.parse(localStorage.getItem('mirage_online_users') || '[]')
-      const updatedUsers = storedUsers.filter((user: OnlineUser) => user.id !== currentUser.id)
-      localStorage.setItem('mirage_online_users', JSON.stringify(updatedUsers))
+      // Send offline signal to server
+      fetch('/api/online-users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'logout',
+          userId: currentUser.id
+        })
+      }).catch(console.error)
     }
   }, [currentUser])
 
