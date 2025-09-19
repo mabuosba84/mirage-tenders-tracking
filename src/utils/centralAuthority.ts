@@ -219,7 +219,8 @@ export const reloadUsersFromServer = async (): Promise<boolean> => {
  * Get the authoritative user definition - SINGLE SOURCE OF TRUTH
  */
 export const getAuthoritativeUser = (username: string): AuthUser | null => {
-  const user = CENTRAL_USER_AUTHORITY.find(u => u.username === username);
+  // Case-insensitive username lookup for better UX
+  const user = CENTRAL_USER_AUTHORITY.find(u => u.username.toLowerCase() === username.toLowerCase());
   if (!user) return null;
 
   // Return a deep copy to prevent mutations
@@ -247,7 +248,7 @@ export const validateUserConsistency = async (username: string): Promise<UserVal
     const response = await fetch('/api/sync');
     if (response.ok) {
       const data = await response.json();
-      serverUser = data.users?.find((u: User) => u.username === username) || null;
+      serverUser = data.users?.find((u: User) => u.username.toLowerCase() === username.toLowerCase()) || null;
     }
   } catch (error) {
     console.warn('Could not validate server user consistency:', error);
@@ -268,7 +269,7 @@ export const validateUserConsistency = async (username: string): Promise<UserVal
     conflicts.push(`Server role mismatch: ${serverUser.role} vs ${authoritativeUser.role}`);
   }
 
-  const localUser = localUsers.find(u => u.username === username);
+  const localUser = localUsers.find(u => u.username.toLowerCase() === username.toLowerCase());
   if (localUser && localUser.role !== authoritativeUser.role) {
     conflicts.push(`Local role mismatch: ${localUser.role} vs ${authoritativeUser.role}`);
   }
@@ -432,7 +433,7 @@ export const getAllAuthoritativeUsers = (): User[] => {
  */
 export const addUserToCentralAuthority = (user: User, password: string): void => {
   const authUser: AuthUser = { ...user, password, updatedAt: new Date() };
-  const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.username === user.username);
+  const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
   if (existingIndex >= 0) {
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
     console.log('✅ CENTRAL AUTHORITY: Updated existing user:', user.username);
@@ -459,7 +460,7 @@ export const updateUserInCentralAuthority = (user: User, password?: string): boo
   console.log('🔒 SIMPLE UPDATE: Starting update for', user.username, 'role:', user.role);
   
   try {
-    const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === user.id || u.username === user.username);
+    const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === user.id || u.username.toLowerCase() === user.username.toLowerCase());
     if (existingIndex < 0) {
       console.error('❌ USER NOT FOUND:', user.username);
       return false;
