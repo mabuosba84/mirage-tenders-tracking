@@ -80,64 +80,55 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const loadTenders = async () => {
     try {
-      // First try to get latest data from server
-      try {
-        const response = await fetch('/api/sync')
-        if (response.ok) {
-          const serverData = await response.json()
-          if (serverData.tenders && Array.isArray(serverData.tenders)) {
-            console.log('📥 Loaded tenders from server:', serverData.tenders.length)
-            // Update local storage with server data
-            await saveTendersToStorage(serverData.tenders)
-            setTenders(serverData.tenders)
-            return // Use server data as primary source
-          }
+      console.log('🔄 Loading tenders - 100% CENTRALIZED MODE');
+      
+      // ONLY load from server - NO localStorage fallback
+      const response = await fetch('/api/sync');
+      if (response.ok) {
+        const serverData = await response.json();
+        if (serverData.tenders && Array.isArray(serverData.tenders)) {
+          console.log('📥 Loaded tenders from server (CENTRALIZED):', serverData.tenders.length);
+          setTenders(serverData.tenders);
+          return;
         }
-      } catch (serverError) {
-        console.log('⚠️ Could not fetch from server, using local storage:', serverError)
       }
       
-      // Fallback to local storage and central storage
-      const data = await loadTendersFromStorage()
-      console.log('📁 Loaded tenders from local storage:', data.length)
-      setTenders(data)
+      // If server fails, show error - no local fallback
+      console.error('❌ Server failed and no local fallback allowed in centralized mode');
+      setTenders([]);
+      
     } catch (error) {
-      console.error('Error loading tenders:', error)
+      console.error('❌ Error loading tenders:', error);
+      setTenders([]);
     }
   }
 
   const saveTendersLocal = async (tenderData: Lead[]) => {
     try {
-      await saveTendersToStorage(tenderData)
+      console.log('💾 Saving tenders - 100% CENTRALIZED MODE');
       
-      // CRITICAL: Immediately sync to server API for cross-device access
-      syncTendersToServer(tenderData)
+      // ONLY save to server - NO localStorage
+      await syncTendersToServer(tenderData);
+      
+      // Immediately reload from server to ensure sync
+      await loadTenders();
+      
     } catch (error) {
-      console.error('Error saving:', error)
+      console.error('❌ Error saving to centralized storage:', error);
     }
   }
 
   const syncTendersToServer = async (tenderData: Lead[]) => {
     try {
-      const currentUsers = getAllAuthoritativeUsers()
+      console.log('🔄 Syncing to server - 100% CENTRALIZED MODE');
       
-      // Create server-compatible user objects
-      const serverUsers = currentUsers.map((user: User) => ({
-        ...user,
-        password: 'defaultPassword123', // Use default password for server sync
-        permissions: {
-          canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
-          canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
-          canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
-          canViewTenderItems: user.permissions?.canViewTenderItems || true,
-          canEditTenders: user.permissions?.canEditTenders || true,
-          canDeleteTenders: user.permissions?.canDeleteTenders || false,
-          canViewFinancialReports: user.permissions?.canViewFinancialReports || false,
-          canManageUsers: user.permissions?.canManageUsers || false,
-          canExportData: user.permissions?.canExportData || false,
-          canViewOptionalFields: user.permissions?.canViewOptionalFields || true
-        }
-      }))
+      // Get current users from server (not localStorage)
+      const usersResponse = await fetch('/api/sync');
+      let serverUsers = [];
+      if (usersResponse.ok) {
+        const userData = await usersResponse.json();
+        serverUsers = userData.users || [];
+      }
 
       const response = await fetch('/api/sync', {
         method: 'POST',
@@ -146,18 +137,25 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         },
         body: JSON.stringify({
           users: serverUsers,
-          tenders: tenderData, // Send complete tender data
-          currentUser: user // Include current user for permission validation
+          tenders: tenderData,
+          source: 'centralized_update'
         }),
-      })
+      });
       
       if (response.ok) {
-        console.log('✅ Tenders synced to server:', tenderData.length)
+        const result = await response.json();
+        console.log('✅ Tenders synced to server (CENTRALIZED):', tenderData.length);
+        setMessage('✅ Data synchronized successfully');
+        return true;
       } else {
-        console.error('❌ Failed to sync tenders to server')
+        console.error('❌ Failed to sync tenders to server');
+        setMessage('❌ Failed to synchronize data');
+        return false;
       }
     } catch (error) {
-      console.error('❌ Error syncing tenders to server:', error)
+      console.error('❌ Error syncing tenders to server:', error);
+      setMessage('❌ Sync error occurred');
+      return false;
     }
   }
 

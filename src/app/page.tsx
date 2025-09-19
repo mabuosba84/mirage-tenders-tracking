@@ -23,42 +23,44 @@ export default function Home() {
     // Future enhancement: Re-implement with proper server-side handling
   }, [])
 
-  // Load user from localStorage on component mount with data sync
+  // Load user from server only - 100% CENTRALIZED MODE
   useEffect(() => {
     const initializeApp = async () => {
       try {
-        // First, load the current user from centralized storage (PRIORITY)
-        const savedUser = await loadCurrentUserFromStorage()
+        console.log('🔄 Initializing app - 100% CENTRALIZED MODE');
+        
+        // Check if user is stored locally (temporary until login)
+        const savedUser = await loadCurrentUserFromStorage();
         if (savedUser) {
-          setUser(savedUser)
-          console.log('✅ Loaded user from storage:', savedUser.username, savedUser.role)
+          setUser(savedUser);
+          console.log('✅ Loaded user from storage:', savedUser.username, savedUser.role);
         }
 
-        // Then, try to sync data from server for cross-domain consistency
+        // Always sync from server - this is the source of truth
         try {
-          const response = await fetch('/api/sync')
+          const response = await fetch('/api/sync');
           if (response.ok) {
-            const syncData = await response.json()
+            const syncData = await response.json();
+            console.log('✅ Server sync successful - centralized data loaded');
+            
+            // The server data is now loaded, components will use it directly
             if (syncData.tenders && syncData.tenders.length > 0) {
-              // Save to both central storage and localStorage for immediate access
-              await saveTendersToStorage(syncData.tenders)
-              console.log('✅ Synced tenders from server:', syncData.tenders.length, 'items')
+              console.log('📊 Server tenders available:', syncData.tenders.length);
             }
             if (syncData.users && syncData.users.length > 0) {
-              // Save to both central storage and localStorage for immediate access  
-              await saveUsersToStorage(syncData.users)
-              console.log('✅ Synced users from server:', syncData.users.length, 'items')
+              console.log('👥 Server users available:', syncData.users.length);
             }
+          } else {
+            console.error('❌ Server sync failed - check Railway deployment');
           }
         } catch (error) {
-          console.warn('⚠️ Server sync failed, using central storage:', error)
+          console.error('❌ Critical: Server unreachable:', error);
         }
 
       } catch (error) {
-        console.error('Error loading user from centralized storage:', error)
-        await removeCurrentUserFromStorage() // Clean up invalid data
+        console.error('Error in centralized initialization:', error);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
