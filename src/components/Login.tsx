@@ -52,6 +52,13 @@ export default function Login({ onLogin }: LoginProps) {
           // Store synced users locally for future use
           localStorage.setItem('mirage_users', JSON.stringify(serverUsers))
           
+          // CRITICAL: Ensure role consistency for admin users
+          console.log('🔍 AUTHENTICATION DEBUG - SERVER USER:', {
+            username: serverUser.username,
+            originalRole: serverUser.role,
+            originalPermissions: serverUser.permissions
+          });
+          
           // Convert server user to client user format
           const user = {
             ...serverUser,
@@ -70,8 +77,12 @@ export default function Login({ onLogin }: LoginProps) {
             }
           }
           
-          console.log('✅ Authenticated via server:', user.username, 'role:', user.role)
-          console.log('🔐 User permissions:', user.permissions)
+          console.log('✅ FINAL USER OBJECT:', {
+            username: user.username,
+            role: user.role,
+            permissions: user.permissions,
+            isAdmin: user.role === 'admin'
+          });
           
           // Log the login for audit trail
           try {
@@ -101,8 +112,12 @@ export default function Login({ onLogin }: LoginProps) {
       }
       
       if (user) {
-        console.log('✅ Authenticated via local storage:', user.username, 'role:', user.role)
-        console.log('🔐 User permissions:', user.permissions)
+        console.log('🔍 AUTHENTICATION DEBUG - LOCAL USER:', {
+          username: user.username,
+          role: user.role,
+          permissions: user.permissions,
+          isAdmin: user.role === 'admin'
+        });
         
         // Log the login for audit trail
         try {
