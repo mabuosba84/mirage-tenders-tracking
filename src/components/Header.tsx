@@ -13,6 +13,12 @@ interface HeaderProps {
 }
 
 export default function Header({ user, onLogout, activeTab, onTabChange }: HeaderProps) {
+  // Safety check to ensure user has required properties
+  if (!user || !user.username || !user.role) {
+    console.warn('Header: Invalid user object received:', user);
+    return null; // Don't render if user data is incomplete
+  }
+
   const handleLogout = async () => {
     try {
       // Log the logout for audit trail
@@ -223,12 +229,12 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
             {/* User Info */}
             <div className="hidden md:flex items-center space-x-3">
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-sm font-medium text-gray-900">{user.name || user.username}</p>
                 <p className="text-xs text-gray-500 capitalize">{user.role}</p>
               </div>
               <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 font-semibold text-sm">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : '?'}
                 </span>
               </div>
             </div>
@@ -362,11 +368,11 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
             <div className="flex items-center space-x-3">
               <div className="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-blue-600 font-semibold text-sm">
-                  {user.name.charAt(0).toUpperCase()}
+                  {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : '?'}
                 </span>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                <p className="text-sm font-medium text-gray-900">{user.name || user.username}</p>
                 <p className="text-xs text-gray-500 capitalize">{user.role}</p>
               </div>
             </div>

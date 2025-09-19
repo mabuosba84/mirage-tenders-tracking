@@ -148,13 +148,13 @@ export default function OnlineUsers({ currentUser }: OnlineUsersProps) {
                 <div className="relative">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm font-medium">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : '?'}
                     </span>
                   </div>
                   <Circle className="absolute -bottom-1 -right-1 w-3 h-3 text-green-500 fill-current" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{user.name}</p>
+                  <p className="text-sm font-medium text-gray-900">{user.name || user.username}</p>
                   <p className="text-xs text-gray-500">@{user.username} • {user.role}</p>
                 </div>
               </div>
