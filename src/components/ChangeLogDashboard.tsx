@@ -130,12 +130,18 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
 
     // Date range filter
     if (filters.startDate) {
-      filtered = filtered.filter(log => log.timestamp >= filters.startDate!)
+      filtered = filtered.filter(log => {
+        const logTimestamp = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+        return logTimestamp >= filters.startDate!;
+      });
     }
     if (filters.endDate) {
       const endDate = new Date(filters.endDate)
       endDate.setHours(23, 59, 59, 999) // Include full end date
-      filtered = filtered.filter(log => log.timestamp <= endDate)
+      filtered = filtered.filter(log => {
+        const logTimestamp = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+        return logTimestamp <= endDate;
+      });
     }
 
     // User filter
@@ -165,8 +171,12 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
       )
     }
 
-    // Sort by timestamp (newest first)
-    filtered.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+    // Sort by timestamp (newest first) - handle both Date objects and strings
+    filtered.sort((a, b) => {
+      const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+      const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+      return timestampB.getTime() - timestampA.getTime();
+    });
 
     setFilteredLogs(filtered)
     setCurrentPage(1) // Reset to first page when filters change

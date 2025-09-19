@@ -100,17 +100,27 @@ export async function GET(request: NextRequest) {
     
     if (startDate) {
       const start = new Date(startDate);
-      filteredLogs = filteredLogs.filter(log => log.timestamp >= start);
+      filteredLogs = filteredLogs.filter(log => {
+        const logTimestamp = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+        return logTimestamp >= start;
+      });
     }
     
     if (endDate) {
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999); // Include full end date
-      filteredLogs = filteredLogs.filter(log => log.timestamp <= end);
+      filteredLogs = filteredLogs.filter(log => {
+        const logTimestamp = log.timestamp instanceof Date ? log.timestamp : new Date(log.timestamp);
+        return logTimestamp <= end;
+      });
     }
     
-    // Sort by timestamp (newest first)
-    filteredLogs.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+    // Sort by timestamp (newest first) - handle both Date objects and strings
+    filteredLogs.sort((a, b) => {
+      const timestampA = a.timestamp instanceof Date ? a.timestamp : new Date(a.timestamp);
+      const timestampB = b.timestamp instanceof Date ? b.timestamp : new Date(b.timestamp);
+      return timestampB.getTime() - timestampA.getTime();
+    });
     
     // Apply pagination
     const paginatedLogs = filteredLogs.slice(offset, offset + limit);
