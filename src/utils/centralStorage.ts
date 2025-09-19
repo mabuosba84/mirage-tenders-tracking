@@ -511,3 +511,145 @@ async function forceNetworkSync(): Promise<void> {
     console.error('❌ Force sync error:', error)
   }
 }
+
+/**
+ * Save current user to centralized storage
+ */
+export const saveCurrentUserToStorage = async (user: User): Promise<void> => {
+  try {
+    // Save to server API for cross-device access
+    await fetch('/api/current-user', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user })
+    })
+    
+    // Also save to localStorage for immediate access
+    localStorage.setItem('currentUser', JSON.stringify(user))
+    console.log('✅ Current user saved to centralized storage:', user.username)
+  } catch (error) {
+    console.error('❌ Failed to save current user to central storage:', error)
+    // Fallback to localStorage only
+    localStorage.setItem('currentUser', JSON.stringify(user))
+  }
+}
+
+/**
+ * Load current user from centralized storage
+ */
+export const loadCurrentUserFromStorage = async (): Promise<User | null> => {
+  try {
+    // Try to load from server first
+    const response = await fetch('/api/current-user')
+    if (response.ok) {
+      const data = await response.json()
+      if (data.success && data.user) {
+        // Update localStorage with fresh data
+        localStorage.setItem('currentUser', JSON.stringify(data.user))
+        return data.user
+      }
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to load user from central storage, using localStorage:', error)
+  }
+  
+  // Fallback to localStorage
+  try {
+    const savedUser = localStorage.getItem('currentUser')
+    if (savedUser) {
+      return JSON.parse(savedUser)
+    }
+  } catch (error) {
+    console.error('❌ Failed to parse current user from localStorage:', error)
+  }
+  
+  return null
+}
+
+/**
+ * Remove current user from centralized storage
+ */
+export const removeCurrentUserFromStorage = async (): Promise<void> => {
+  try {
+    // Remove from server
+    await fetch('/api/current-user', {
+      method: 'DELETE'
+    })
+    
+    // Remove from localStorage
+    localStorage.removeItem('currentUser')
+    console.log('✅ Current user removed from centralized storage')
+  } catch (error) {
+    console.error('❌ Failed to remove user from central storage:', error)
+    // Fallback to localStorage only
+    localStorage.removeItem('currentUser')
+  }
+}
+
+/**
+ * Save company logo to centralized storage
+ */
+export const saveCompanyLogoToStorage = async (logoData: string): Promise<void> => {
+  try {
+    // Save to server
+    await fetch('/api/company-logo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ logo: logoData })
+    })
+    
+    // Save to localStorage as fallback
+    localStorage.setItem('companyLogo', logoData)
+    console.log('✅ Company logo saved to centralized storage')
+  } catch (error) {
+    console.error('❌ Failed to save logo to central storage:', error)
+    // Fallback to localStorage only
+    localStorage.setItem('companyLogo', logoData)
+  }
+}
+
+/**
+ * Load company logo from centralized storage
+ */
+export const loadCompanyLogoFromStorage = async (): Promise<string | null> => {
+  try {
+    // Try to get from server first
+    const response = await fetch('/api/company-logo')
+    if (response.ok) {
+      const data = await response.json()
+      if (data.logo) {
+        // Sync to localStorage
+        localStorage.setItem('companyLogo', data.logo)
+        return data.logo
+      }
+    }
+  } catch (error) {
+    console.error('❌ Failed to load logo from server:', error)
+  }
+  
+  // Fallback to localStorage
+  const localLogo = localStorage.getItem('companyLogo')
+  return localLogo
+}
+
+/**
+ * Remove company logo from centralized storage
+ */
+export const removeCompanyLogoFromStorage = async (): Promise<void> => {
+  try {
+    // Remove from server
+    await fetch('/api/company-logo', {
+      method: 'DELETE'
+    })
+    
+    // Remove from localStorage
+    localStorage.removeItem('companyLogo')
+    console.log('✅ Company logo removed from centralized storage')
+  } catch (error) {
+    console.error('❌ Failed to remove logo from central storage:', error)
+    // Fallback to localStorage only
+    localStorage.removeItem('companyLogo')
+  }
+}

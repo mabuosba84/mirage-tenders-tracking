@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { User, Lead } from '@/types'
 import { calculateResponseTime } from '@/utils/dateCalculations'
-import { loadTendersFromStorage, saveTendersToStorage } from '@/utils/centralStorage'
+import { loadTendersFromStorage, saveTendersToStorage, loadCurrentUserFromStorage } from '@/utils/centralStorage'
 import { getAllAuthoritativeUsers } from '@/utils/centralAuthority'
 import Header from './Header'
 import TenderForm from './TenderForm'
@@ -34,17 +34,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
 
   const initializeUserSync = async () => {
     try {
-      // First get current leads from localStorage to preserve them
-      const currentTenders = JSON.parse(localStorage.getItem('mirage_tenders') || '[]')
+      // First get current leads from centralized storage to preserve them
+      const currentTenders = await loadTendersFromStorage() || []
       
       // Sync current users to server on dashboard load from CENTRAL AUTHORITY ONLY
       const currentUsers = getAllAuthoritativeUsers()
-      const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
       
-      // Create server-compatible user objects with passwords
+      // Create server-compatible user objects with default passwords
       const serverUsers = currentUsers.map((user: User) => ({
         ...user,
-        password: credentials[user.username] || 'defaultPassword123',
+        password: 'defaultPassword123', // Use default password for server sync
         permissions: {
           canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
           canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
@@ -89,7 +88,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
           if (serverData.tenders && Array.isArray(serverData.tenders)) {
             console.log('📥 Loaded tenders from server:', serverData.tenders.length)
             // Update local storage with server data
-            localStorage.setItem('mirage_tenders', JSON.stringify(serverData.tenders))
+            await saveTendersToStorage(serverData.tenders)
             setTenders(serverData.tenders)
             return // Use server data as primary source
           }
@@ -107,10 +106,9 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     }
   }
 
-  const saveTendersLocal = (tenderData: Lead[]) => {
+  const saveTendersLocal = async (tenderData: Lead[]) => {
     try {
-      localStorage.setItem('mirage_tenders', JSON.stringify(tenderData))
-      saveTendersToStorage(tenderData)
+      await saveTendersToStorage(tenderData)
       
       // CRITICAL: Immediately sync to server API for cross-device access
       syncTendersToServer(tenderData)
@@ -122,12 +120,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const syncTendersToServer = async (tenderData: Lead[]) => {
     try {
       const currentUsers = getAllAuthoritativeUsers()
-      const credentials = JSON.parse(localStorage.getItem('mirage_user_credentials') || '{}')
       
       // Create server-compatible user objects
       const serverUsers = currentUsers.map((user: User) => ({
         ...user,
-        password: credentials[user.username] || 'defaultPassword123',
+        password: 'defaultPassword123', // Use default password for server sync
         permissions: {
           canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
           canViewSellingPrice: user.permissions?.canViewSellingPrice || true,

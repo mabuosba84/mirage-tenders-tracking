@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { User } from '@/types'
 import { LogOut, BarChart3, Plus, List, Home, FileText, Users, Search, Settings, Upload, X, History } from 'lucide-react'
 import { logChange } from '@/utils/changeLogUtils'
+import { loadCompanyLogoFromStorage, saveCompanyLogoToStorage, removeCompanyLogoFromStorage } from '@/utils/centralStorage'
 import Image from 'next/image'
 
 interface HeaderProps {
@@ -29,14 +30,19 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
   };
 
   const [showSettings, setShowSettings] = useState(false)
-  const [logoUrl, setLogoUrl] = useState<string | null>(() => {
-    if (typeof window !== 'undefined') {
-      const customLogo = localStorage.getItem('companyLogo')
-      // Return custom logo if available, otherwise default to Mirage logo
-      return customLogo || '/mirage-logo.png'
+  const [logoUrl, setLogoUrl] = useState<string | null>('/mirage-logo.png')
+
+  // Load logo from centralized storage on component mount
+  useEffect(() => {
+    const loadLogo = async () => {
+      if (typeof window !== 'undefined') {
+        const customLogo = await loadCompanyLogoFromStorage()
+        // Return custom logo if available, otherwise keep default Mirage logo
+        setLogoUrl(customLogo || '/mirage-logo.png')
+      }
     }
-    return '/mirage-logo.png' // Default Mirage logo for server-side rendering
-  })
+    loadLogo()
+  }, [])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Force logo sync whenever user changes or component mounts
@@ -54,14 +60,14 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
           // Update with custom logo from central storage
           if (logoUrl !== result.logo) {
             setLogoUrl(result.logo)
-            localStorage.setItem('companyLogo', result.logo)
+            await saveCompanyLogoToStorage(result.logo)
             console.log('✅ Custom logo synced from central storage')
           }
         } else {
           // No custom logo in central storage, ensure we're using default Mirage logo
           if (logoUrl !== '/mirage-logo.png') {
             setLogoUrl('/mirage-logo.png')
-            localStorage.removeItem('companyLogo') // Clear any old custom logo
+            await removeCompanyLogoFromStorage() // Clear any old custom logo
             console.log('✅ Using default Mirage logo (no custom logo found)')
           }
         }
@@ -122,7 +128,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
       reader.onload = async (e) => {
         const result = e.target?.result as string
         setLogoUrl(result)
-        localStorage.setItem('companyLogo', result)
+        await saveCompanyLogoToStorage(result)
         
         // Sync logo to central storage for cross-domain access
         try {
@@ -146,7 +152,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
   const handleRemoveLogo = async () => {
     // Reset to default Mirage logo instead of null
     setLogoUrl('/mirage-logo.png')
-    localStorage.removeItem('companyLogo')
+    await removeCompanyLogoFromStorage()
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }

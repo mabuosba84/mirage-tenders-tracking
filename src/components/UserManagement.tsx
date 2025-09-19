@@ -25,6 +25,7 @@ import {
   getAllAuthoritativeUsers, 
   getAuthoritativeUser 
 } from '@/utils/centralAuthority'
+import { saveCurrentUserToStorage } from '@/utils/centralStorage'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
 
 interface UserManagementProps {
@@ -271,9 +272,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         // Continue even if logging fails
       }
       
-      // If the updated user is the current user, update localStorage
+      // If the updated user is the current user, update centralized storage
       if (updatedUser.id === currentUser.id) {
-        localStorage.setItem('currentUser', JSON.stringify(updatedUser))
+        await saveCurrentUserToStorage(updatedUser)
         // Dispatch custom event to notify other components
         window.dispatchEvent(new Event('userUpdated'))
       }

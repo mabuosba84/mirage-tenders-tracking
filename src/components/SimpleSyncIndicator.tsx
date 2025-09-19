@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import { Wifi, WifiOff, Server, Database, CheckCircle, XCircle } from 'lucide-react'
+import { loadTendersFromStorage, loadUsersFromStorage } from '@/utils/centralStorage'
 
 interface SimpleSyncStatus {
   online: boolean
@@ -22,10 +24,10 @@ export default function SimpleSyncIndicator() {
 
   useEffect(() => {
     // Simple status check
-    const updateStatus = () => {
+    const updateStatus = async () => {
       try {
-        const tenders = JSON.parse(localStorage.getItem('mirage_central_tenders') || '[]')
-        const users = JSON.parse(localStorage.getItem('mirage_central_users') || '[]')
+        const tenders = await loadTendersFromStorage() || []
+        const users = await loadUsersFromStorage() || []
         
         setStatus(prev => ({
           ...prev,

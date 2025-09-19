@@ -4,6 +4,13 @@ import { useState, useEffect } from 'react'
 import Login from '@/components/Login'
 import Dashboard from '@/components/Dashboard'
 import { User } from '@/types'
+import { 
+  saveTendersToStorage, 
+  saveUsersToStorage, 
+  saveCurrentUserToStorage,
+  loadCurrentUserFromStorage,
+  removeCurrentUserFromStorage 
+} from '@/utils/centralStorage'
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
@@ -26,27 +33,28 @@ export default function Home() {
           if (response.ok) {
             const syncData = await response.json()
             if (syncData.tenders && syncData.tenders.length > 0) {
-              localStorage.setItem('mirage_tenders', JSON.stringify(syncData.tenders))
+              // Save to both central storage and localStorage for immediate access
+              await saveTendersToStorage(syncData.tenders)
               console.log('✅ Synced tenders from server:', syncData.tenders.length, 'items')
             }
             if (syncData.users && syncData.users.length > 0) {
-              localStorage.setItem('mirage_users', JSON.stringify(syncData.users))
+              // Save to both central storage and localStorage for immediate access  
+              await saveUsersToStorage(syncData.users)
               console.log('✅ Synced users from server:', syncData.users.length, 'items')
             }
           }
         } catch (error) {
-          console.warn('⚠️ Server sync failed, using local data:', error)
+          console.warn('⚠️ Server sync failed, using central storage:', error)
         }
 
-        // Then load the current user
-        const savedUser = localStorage.getItem('currentUser')
+        // Then load the current user from centralized storage
+        const savedUser = await loadCurrentUserFromStorage()
         if (savedUser) {
-          const parsedUser = JSON.parse(savedUser)
-          setUser(parsedUser)
+          setUser(savedUser)
         }
       } catch (error) {
-        console.error('Error loading user from localStorage:', error)
-        localStorage.removeItem('currentUser')
+        console.error('Error loading user from centralized storage:', error)
+        await removeCurrentUserFromStorage() // Clean up invalid data
       } finally {
         setIsLoading(false)
       }
@@ -55,17 +63,16 @@ export default function Home() {
     initializeApp()
   }, [])
 
-  // Listen for changes to localStorage currentUser
+  // Listen for changes to current user in centralized storage
   useEffect(() => {
-    const handleStorageChange = () => {
+    const handleStorageChange = async () => {
       try {
-        const savedUser = localStorage.getItem('currentUser')
+        const savedUser = await loadCurrentUserFromStorage()
         if (savedUser) {
-          const parsedUser = JSON.parse(savedUser)
-          setUser(parsedUser)
+          setUser(savedUser)
         }
       } catch (error) {
-        console.error('Error updating user from localStorage:', error)
+        console.error('Error updating user from centralized storage:', error)
       }
     }
 
@@ -80,21 +87,21 @@ export default function Home() {
     }
   }, [])
 
-  const handleLogin = (newUser: User) => {
+  const handleLogin = async (newUser: User) => {
     try {
-      localStorage.setItem('currentUser', JSON.stringify(newUser))
+      await saveCurrentUserToStorage(newUser)
       setUser(newUser)
     } catch (error) {
-      console.error('Error saving user to localStorage:', error)
+      console.error('Error saving user to centralized storage:', error)
       setUser(newUser) // Still set the user even if saving fails
     }
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     try {
-      localStorage.removeItem('currentUser')
+      await removeCurrentUserFromStorage()
     } catch (error) {
-      console.error('Error removing user from localStorage:', error)
+      console.error('Error removing user from centralized storage:', error)
     }
     setUser(null)
   }
