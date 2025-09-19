@@ -19,6 +19,11 @@ export const logChange = async (
   try {
     console.log('🔄 CHANGE LOG: Starting log for', action, entity, 'by', user.username);
     
+    // Detect device and platform information
+    const userAgent = typeof window !== 'undefined' ? window.navigator.userAgent : 'Server';
+    const isMobile = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const platform = typeof window !== 'undefined' ? window.navigator.platform : 'Server';
+    
     const logEntry = {
       userId: user.id,
       username: user.username,
@@ -28,10 +33,18 @@ export const logChange = async (
       entityId: options.entityId,
       entityName: options.entityName,
       changes: options.changes,
-      details: options.details
+      details: options.details,
+      // Enhanced mobile tracking
+      deviceInfo: {
+        userAgent,
+        isMobile,
+        platform,
+        timestamp: new Date().toISOString(),
+        sessionId: typeof window !== 'undefined' ? window.sessionStorage.getItem('sessionId') || 'unknown' : 'server'
+      }
     };
 
-    console.log('📝 CHANGE LOG: Prepared entry:', logEntry);
+    console.log('📝 CHANGE LOG: Prepared entry with device info:', logEntry);
 
     // Try to send to server first
     try {

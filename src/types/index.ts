@@ -158,6 +158,13 @@ export interface ChangeLogEntry {
   ipAddress?: string
   userAgent?: string
   details?: string
+  deviceInfo?: {
+    userAgent: string
+    isMobile: boolean
+    platform: string
+    timestamp: string
+    sessionId: string
+  }
 }
 
 export type ChangeLogAction = 

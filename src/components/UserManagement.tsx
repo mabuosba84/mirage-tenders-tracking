@@ -19,6 +19,7 @@ import {
   X
 } from 'lucide-react'
 import { addUser, updateUser, deleteUser, resetUserPassword, getAllUsers } from '@/utils/userStorage'
+import { addUserSecure, updateUserSecure, resetPasswordSecure, deleteUserSecure } from '@/utils/secureUserManagement'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
 import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
@@ -254,8 +255,14 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         permissions: userForm.permissions
       }
 
-      // Add user to storage with password
-      addUser(newUser, userForm.password)
+      // Add user to storage with password - SECURE VERSION
+      const success = await addUserSecure(newUser, userForm.password)
+      
+      if (!success) {
+        setErrors({ general: 'Failed to add user to central authority' })
+        setIsLoading(false)
+        return
+      }
       
       // Log the user creation for audit trail
       try {
@@ -315,8 +322,14 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         updatedAt: new Date()
       }
 
-      // Update user in storage
-      updateUser(updatedUser)
+      // Update user in storage - SECURE VERSION
+      const success = await updateUserSecure(updatedUser, userForm.password || undefined)
+      
+      if (!success) {
+        setErrors({ general: 'Failed to update user in central authority' })
+        setIsLoading(false)
+        return
+      }
       
       // Log the user update for audit trail
       try {
@@ -468,8 +481,8 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           await new Promise(resolve => setTimeout(resolve, 1000))
           const user = users.find(u => u.id === passwordReset.userId)
       if (user) {
-        // Reset password in storage
-        const success = resetUserPassword(user.username, passwordReset.newPassword)
+        // Reset password in storage - SECURE VERSION
+        const success = await resetPasswordSecure(user.username, passwordReset.newPassword)
         
         if (success) {
           // Sync to centralized storage
