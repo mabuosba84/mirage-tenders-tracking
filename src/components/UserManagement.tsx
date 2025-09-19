@@ -104,7 +104,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           ...user,
           password: credentials[user.username] || 'defaultPassword123', // Include password for server
           permissions: {
-            canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+            canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
             canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
             canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
             canViewTenderItems: user.permissions?.canViewTenderItems || true,

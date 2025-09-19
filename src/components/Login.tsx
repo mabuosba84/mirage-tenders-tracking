@@ -57,7 +57,7 @@ export default function Login({ onLogin }: LoginProps) {
             ...serverUser,
             lastLogin: new Date(),
             permissions: {
-              canViewCostFromVendor: serverUser.permissions?.canViewCostFromHP || false,
+              canViewCostFromVendor: serverUser.permissions?.canViewCostFromHP || serverUser.permissions?.canViewCostFromVendor || false,
               canViewSellingPrice: serverUser.permissions?.canViewSellingPrice || true,
               canViewProfitMargin: serverUser.permissions?.canViewProfitMargin || false,
               canViewTenderItems: serverUser.permissions?.canViewTenderItems || true,
@@ -70,7 +70,8 @@ export default function Login({ onLogin }: LoginProps) {
             }
           }
           
-          console.log('✅ Authenticated via server:', user.username)
+          console.log('✅ Authenticated via server:', user.username, 'role:', user.role)
+          console.log('🔐 User permissions:', user.permissions)
           
           // Log the login for audit trail
           try {
@@ -100,6 +101,9 @@ export default function Login({ onLogin }: LoginProps) {
       }
       
       if (user) {
+        console.log('✅ Authenticated via local storage:', user.username, 'role:', user.role)
+        console.log('🔐 User permissions:', user.permissions)
+        
         // Log the login for audit trail
         try {
           await logChange(user, 'LOGIN', 'USER', {

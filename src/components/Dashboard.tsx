@@ -46,7 +46,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         ...user,
         password: credentials[user.username] || 'defaultPassword123',
         permissions: {
-          canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+          canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
           canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
           canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
           canViewTenderItems: user.permissions?.canViewTenderItems || true,
@@ -129,7 +129,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         ...user,
         password: credentials[user.username] || 'defaultPassword123',
         permissions: {
-          canViewCostFromHP: user.permissions?.canViewCostFromVendor || false,
+          canViewCostFromVendor: user.permissions?.canViewCostFromVendor || false,
           canViewSellingPrice: user.permissions?.canViewSellingPrice || true,
           canViewProfitMargin: user.permissions?.canViewProfitMargin || false,
           canViewTenderItems: user.permissions?.canViewTenderItems || true,
