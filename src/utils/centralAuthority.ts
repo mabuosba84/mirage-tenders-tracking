@@ -26,7 +26,9 @@ interface UserValidation {
  * CENTRALIZED USER AUTHORITY - Single source of truth
  * This is the ONLY place where user roles and permissions should be defined
  */
-const CENTRAL_USER_AUTHORITY: AuthUser[] = [
+
+// Default users that are always available as fallback
+const getDefaultUserAuthority = (): AuthUser[] => [
   {
     id: '1',
     username: 'admin',
@@ -59,20 +61,20 @@ const CENTRAL_USER_AUTHORITY: AuthUser[] = [
     name: 'Regular User',
     email: 'user@miragebs.com',
     isActive: true,
-    createdAt: new Date('2024-01-01T00:00:00.000Z'),
-    updatedAt: new Date('2024-01-01T00:00:00.000Z'),
+    createdAt: new Date('2025-02-15T00:00:00.000Z'),
+    updatedAt: new Date('2025-09-10T00:00:00.000Z'),
     lastLogin: undefined,
     permissions: {
       canViewCostFromVendor: false,
-      canViewSellingPrice: true,
+      canViewSellingPrice: false,
       canViewProfitMargin: false,
-      canViewTenderItems: true,
-      canEditTenders: true,
+      canViewTenderItems: false,
+      canEditTenders: false,
       canDeleteTenders: false,
       canViewFinancialReports: false,
       canManageUsers: false,
-      canExportData: true,
-      canViewOptionalFields: true
+      canExportData: false,
+      canViewOptionalFields: false
     }
   },
   {
@@ -148,6 +150,58 @@ const CENTRAL_USER_AUTHORITY: AuthUser[] = [
     }
   }
 ];
+
+/**
+ * Initialize central authority from localStorage or use defaults
+ * This ensures role changes persist across page refreshes
+ */
+const initializeCentralAuthority = (): AuthUser[] => {
+  if (typeof window === 'undefined') {
+    return getDefaultUserAuthority(); // Server-side fallback
+  }
+
+  try {
+    // Try to load from stored central authority data first
+    const storedAuthority = localStorage.getItem('mirage_central_authority');
+    if (storedAuthority) {
+      const parsed = JSON.parse(storedAuthority);
+      console.log('🔄 CENTRAL AUTHORITY: Loaded from localStorage:', parsed.length, 'users');
+      return parsed;
+    }
+
+    // If no central authority data, try to load from regular user storage
+    const storedUsers = localStorage.getItem('mirage_users');
+    if (storedUsers) {
+      const users = JSON.parse(storedUsers);
+      console.log('🔄 CENTRAL AUTHORITY: Migrating from user storage:', users.length, 'users');
+      
+      // Convert users to AuthUser format (need to add passwords)
+      const defaults = getDefaultUserAuthority();
+      const authUsers = users.map((user: User) => {
+        const defaultUser = defaults.find(d => d.username === user.username);
+        return {
+          ...user,
+          password: defaultUser?.password || 'password123' // Use default or fallback password
+        };
+      });
+      
+      // Save to central authority storage
+      localStorage.setItem('mirage_central_authority', JSON.stringify(authUsers));
+      return authUsers;
+    }
+
+    console.log('🔄 CENTRAL AUTHORITY: Using default users');
+    const defaults = getDefaultUserAuthority();
+    localStorage.setItem('mirage_central_authority', JSON.stringify(defaults));
+    return defaults;
+  } catch (error) {
+    console.error('❌ CENTRAL AUTHORITY: Error initializing, using defaults:', error);
+    return getDefaultUserAuthority();
+  }
+};
+
+// SINGLE SOURCE OF TRUTH - now loads from localStorage if available
+let CENTRAL_USER_AUTHORITY: AuthUser[] = initializeCentralAuthority();
 
 /**
  * Get the authoritative user definition - SINGLE SOURCE OF TRUTH
@@ -386,7 +440,11 @@ export const updateUserInCentralAuthority = (user: User, password?: string): voi
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
     console.log('✅ CENTRAL AUTHORITY: Updated user permissions:', user.username, user.permissions);
     
-    // IMMEDIATELY sync to localStorage for persistence
+    // IMMEDIATELY sync to BOTH localStorage keys for persistence
+    // 1. Save to central authority storage (with passwords)
+    localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+    
+    // 2. Save to user storage (without passwords for compatibility)
     const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
       const { password: _, ...userWithoutPassword } = u;
       return userWithoutPassword;

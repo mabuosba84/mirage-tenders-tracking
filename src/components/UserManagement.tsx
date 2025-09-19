@@ -75,6 +75,10 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<any>({})
+  
+  // Success states for UI feedback
+  const [userUpdateSuccess, setUserUpdateSuccess] = useState(false)
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(false)
 
   // Load users from ONLY central authority - no other sources
   useEffect(() => {
@@ -295,8 +299,16 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       
       // Refresh from central authority
       refreshUsersFromCentralAuthority();
-      setEditingUser(null)
-      resetForm()
+      
+      // Show success state for UI feedback
+      setUserUpdateSuccess(true);
+      
+      // Auto-close the dialog after success (optional)
+      setTimeout(() => {
+        setEditingUser(null);
+        resetForm();
+        setUserUpdateSuccess(false);
+      }, 2000); // Show success for 2 seconds then auto-close
       
       // Trigger automatic sync after editing user
       if (onAutoSync) {
@@ -424,8 +436,13 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         console.log('✅ PASSWORD RESET: Successfully updated in central authority:', user.username);
         
         alert('Password has been reset successfully!')
-        setShowPasswordReset(null)
-        setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' })
+        // Show success and auto-close after delay
+        setPasswordResetSuccess(true);
+        setTimeout(() => {
+          setShowPasswordReset(null);
+          setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' });
+          setPasswordResetSuccess(false);
+        }, 2000);
       } else {
         alert('User not found.')
       }
@@ -1007,17 +1024,36 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
               </div>
             </div>
             
+            {/* Success Message */}
+            {userUpdateSuccess && (
+              <div className="px-6 py-3 bg-green-50 border-t border-green-200">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-green-800">
+                      User successfully updated! Changes will take effect immediately.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
               <button
                 onClick={() => {
                   setShowAddUser(false)
                   setEditingUser(null)
                   resetForm()
+                  setUserUpdateSuccess(false)
                 }}
                 className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
                 <X className="h-4 w-4" />
-                <span>Cancel</span>
+                <span>{userUpdateSuccess ? 'Close' : 'Cancel'}</span>
               </button>
               <button
                 onClick={editingUser ? handleEditUser : handleAddUser}
@@ -1085,10 +1121,11 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
                   setShowPasswordReset(null)
                   setPasswordReset({ userId: '', newPassword: '', confirmPassword: '' })
                   setErrors({})
+                  setPasswordResetSuccess(false)
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
               >
-                Cancel
+                {passwordResetSuccess ? 'Close' : 'Cancel'}
               </button>
               <button
                 onClick={handlePasswordReset}
