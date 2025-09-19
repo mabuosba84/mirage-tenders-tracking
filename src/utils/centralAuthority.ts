@@ -308,10 +308,24 @@ export const clearUserSessions = async (username: string): Promise<void> => {
  */
 export const authenticateUserPermanent = async (username: string, password: string): Promise<AuthenticationResult> => {
   console.log('🔒 PERMANENT AUTH: Starting authentication for', username);
+  
+  // FORCE initialization if central authority is empty
+  if (CENTRAL_USER_AUTHORITY.length < 5) {
+    console.warn('⚠️ FIXING: Central authority incomplete, forcing reset');
+    CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
+    // Save to localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+    }
+  }
+  
+  console.log('🔍 DEBUG: Available users in central authority:', CENTRAL_USER_AUTHORITY.map(u => u.username));
+  console.log('🔍 DEBUG: Central authority length:', CENTRAL_USER_AUTHORITY.length);
 
   // Step 1: Get authoritative user definition
   const authoritativeUser = getAuthoritativeUser(username);
   if (!authoritativeUser) {
+    console.error('❌ DEBUG: User not found. Available users:', CENTRAL_USER_AUTHORITY.map(u => u.username));
     return {
       success: false,
       source: 'fallback',
