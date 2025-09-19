@@ -3,6 +3,7 @@
 import { Lead, User } from '@/types'
 import { TrendingUp, TrendingDown, Clock, Award, DollarSign, Percent, Shield } from 'lucide-react'
 import { formatResponseTime, formatNumber, formatPercentage } from '@/utils/dateCalculations'
+import OnlineUsers from './OnlineUsers'
 
 interface StatisticsProps {
   tenders: Lead[]
@@ -297,50 +298,60 @@ export default function Statistics({ tenders, user }: StatisticsProps) {
         </div>
       </div>
 
-      {/* Recent Tenders */}
-      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Tenders</h3>
-        {recentTenders.length > 0 ? (
-          <div className="space-y-3">
-            {recentTenders.map((tender) => (
-              <div key={`stats-recent-${tender.id}`} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
-                <div className="flex items-center space-x-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    tender.tenderStatus === 'Won' ? 'bg-green-500' :
-                    tender.tenderStatus === 'Lost' ? 'bg-red-500' :
-                    tender.tenderStatus === 'Under review' ? 'bg-yellow-500' :
-                    'bg-purple-500'
-                  }`}></div>
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      Tender #{tender.id}
-                    </p>
-                    <p className="text-xs text-gray-600">
-                      Added by {tender.addedBy} • {new Date(tender.createdAt).toLocaleDateString()}
-                    </p>
+      {/* Recent Activity and Online Users */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Tenders - takes 2/3 of the space */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Tenders</h3>
+            {recentTenders.length > 0 ? (
+              <div className="space-y-3">
+                {recentTenders.map((tender) => (
+                  <div key={`stats-recent-${tender.id}`} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${
+                        tender.tenderStatus === 'Won' ? 'bg-green-500' :
+                        tender.tenderStatus === 'Lost' ? 'bg-red-500' :
+                        tender.tenderStatus === 'Under review' ? 'bg-yellow-500' :
+                        'bg-purple-500'
+                      }`}></div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          Tender #{tender.id}
+                        </p>
+                        <p className="text-xs text-gray-600">
+                          Added by {tender.addedBy} • {new Date(tender.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className={`text-sm font-medium ${
+                        tender.tenderStatus === 'Won' ? 'text-green-600' :
+                        tender.tenderStatus === 'Lost' ? 'text-red-600' :
+                        tender.tenderStatus === 'Under review' ? 'text-yellow-600' :
+                        'text-purple-600'
+                      }`}>
+                        {tender.tenderStatus}
+                      </p>
+                      {tender.sellingPrice && (
+                        <p className="text-xs text-gray-600">
+                          {tender.sellingPrice} JD
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <p className={`text-sm font-medium ${
-                    tender.tenderStatus === 'Won' ? 'text-green-600' :
-                    tender.tenderStatus === 'Lost' ? 'text-red-600' :
-                    tender.tenderStatus === 'Under review' ? 'text-yellow-600' :
-                    'text-purple-600'
-                  }`}>
-                    {tender.tenderStatus}
-                  </p>
-                  {tender.sellingPrice && (
-                    <p className="text-xs text-gray-600">
-                      {tender.sellingPrice} JD
-                    </p>
-                  )}
-                </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <p className="text-gray-500 text-center py-4">No tenders found</p>
+            )}
           </div>
-        ) : (
-          <p className="text-gray-500 text-center py-4">No tenders found</p>
-        )}
+        </div>
+
+        {/* Online Users - takes 1/3 of the space */}
+        <div className="lg:col-span-1">
+          <OnlineUsers currentUser={user} />
+        </div>
       </div>
     </div>
   )
