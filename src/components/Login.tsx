@@ -72,13 +72,13 @@ export default function Login({ onLogin }: LoginProps) {
         {/* Logo and Header */}
         <div className="text-center mb-8">
           {/* Mirage Logo */}
-          <div className="mx-auto w-20 h-20 mb-6 relative">
+          <div className="mx-auto w-32 h-24 mb-6 relative">
             <Image
               src="/mirage-logo.png"
               alt="Mirage Business Solutions"
-              width={80}
-              height={80}
-              className="rounded-2xl shadow-lg object-contain"
+              width={128}
+              height={96}
+              className="shadow-lg object-contain"
               priority
             />
           </div>
