@@ -132,7 +132,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         if (serverData.tenders && Array.isArray(serverData.tenders)) {
           console.log('✅ FOUND TENDERS ON RAILWAY:', serverData.tenders.length);
           setTenders(serverData.tenders);
-          setMessage(`✅ Loaded ${serverData.tenders.length} tenders from Railway`);
+          // SILENT: No user message for background sync
           return;
         } else {
           console.error('❌ No tenders array in Railway response:', serverData);
@@ -144,12 +144,12 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       // If we get here, something is wrong with Railway connection
       console.error('❌ CRITICAL: Cannot connect to Railway data');
       setTenders([]);
-      setMessage('❌ Cannot load data from Railway server');
+      // SILENT: No user error message for background sync
       
     } catch (error) {
       console.error('❌ Error loading from Railway:', error);
       setTenders([]);
-      setMessage('❌ Railway connection error');
+      // SILENT: No user error message for background sync
     }
   }
 
@@ -175,7 +175,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       
     } catch (error) {
       console.error('❌ Error saving to Railway:', error);
-      setMessage('❌ Failed to save to Railway');
+      // SILENT: No user error message for background sync
     }
   }
 
@@ -206,16 +206,16 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       if (response.ok) {
         const result = await response.json();
         console.log('✅ Tenders synced to server (CENTRALIZED):', tenderData.length);
-        setMessage('✅ Data synchronized successfully');
+        // SILENT: No user message for background sync
         return true;
       } else {
         console.error('❌ Failed to sync tenders to server');
-        setMessage('❌ Failed to synchronize data');
+        // SILENT: No user error message for background sync
         return false;
       }
     } catch (error) {
       console.error('❌ Error syncing tenders to server:', error);
-      setMessage('❌ Sync error occurred');
+      // SILENT: No user error message for background sync
       return false;
     }
   }
