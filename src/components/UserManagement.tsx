@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { addUser, updateUser, deleteUser, resetUserPassword, getAllUsers } from '@/utils/userStorage'
 import { addUserSecure, updateUserSecure, resetPasswordSecure, deleteUserSecure } from '@/utils/secureUserManagement'
+import { getAllAuthoritativeUsers, getAuthoritativeUser } from '@/utils/centralAuthority'
 import { logUserChange, logChange } from '@/utils/changeLogUtils'
 import { loadUsersFromStorage, saveUsersToStorage } from '@/utils/centralStorage'
 
@@ -75,15 +76,27 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
   useEffect(() => {
     const loadUsers = async () => {
       try {
+        // First try to get all authoritative users (they always have correct permissions)
+        const authoritativeUsers = getAllAuthoritativeUsers()
+        if (authoritativeUsers && authoritativeUsers.length > 0) {
+          console.log('✅ Loading users from central authority:', authoritativeUsers.length)
+          setUsers(authoritativeUsers)
+          
+          // Sync these to localStorage for consistency
+          localStorage.setItem('mirage_users', JSON.stringify(authoritativeUsers))
+          return
+        }
+
+        // Fallback to centralized storage
         const centralUsers = await loadUsersFromStorage()
         if (centralUsers && centralUsers.length > 0) {
           setUsers(centralUsers)
         } else {
-          // Fallback to local storage users
+          // Final fallback to local storage users
           setUsers(getAllUsers())
         }
       } catch (error) {
-        console.error('Error loading users from central storage:', error)
+        console.error('Error loading users from central authority:', error)
         setUsers(getAllUsers())
       }
     }
@@ -280,8 +293,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       // Sync to centralized storage
       await syncUsersToStorage()
       
-      // Update local state
-      setUsers(getAllUsers())
+      // Update local state from central authority (not local storage)
+      const refreshedUsers = getAllAuthoritativeUsers()
+      setUsers(refreshedUsers)
       setShowAddUser(false)
       resetForm()
       
@@ -355,8 +369,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         window.dispatchEvent(new Event('userUpdated'))
       }
       
-      // Update local state
-      setUsers(getAllUsers())
+      // Update local state from central authority (not local storage)
+      const refreshedUsers = getAllAuthoritativeUsers()
+      setUsers(refreshedUsers)
       setEditingUser(null)
       resetForm()
       
@@ -417,8 +432,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       // Sync to centralized storage
       await syncUsersToStorage()
       
-      // Update local state
-      setUsers(getAllUsers())
+      // Update local state from central authority (not local storage)
+      const refreshedUsers = getAllAuthoritativeUsers()
+      setUsers(refreshedUsers)
       
       // Trigger automatic sync after deleting user
       if (onAutoSync) {
@@ -462,8 +478,9 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         // Sync to centralized storage
         await syncUsersToStorage()
         
-        // Update local state
-        setUsers(getAllUsers())
+        // Update local state from central authority
+        const refreshedUsers = getAllAuthoritativeUsers()
+        setUsers(refreshedUsers)
       }
     } catch (error) {
       console.error('Error updating user status:', error)
