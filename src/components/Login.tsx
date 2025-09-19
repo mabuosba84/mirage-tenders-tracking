@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { User, LoginFormData } from '@/types'
 import { Eye, EyeOff, LogIn } from 'lucide-react'
-import { authenticateUser, authenticateUserAsync } from '@/utils/userStorage'
+import { authenticateUserPermanent } from '@/utils/centralAuthority'
 import { logChange } from '@/utils/changeLogUtils'
 
 interface LoginProps {
@@ -25,99 +25,25 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      // First try to sync users from server
-      let serverUsers: any[] = []
-      try {
-        const response = await fetch('/api/sync')
-        if (response.ok) {
-          const data = await response.json()
-          if (data.users && Array.isArray(data.users)) {
-            serverUsers = data.users
-            console.log('Synced users from server:', serverUsers.length)
-          }
-        }
-      } catch (syncError) {
-        console.log('Could not sync from server, using local storage:', syncError)
-      }
+      console.log('🔒 PERMANENT AUTH: Starting authentication for', formData.username);
       
-      // Check if user exists in server data first
-      if (serverUsers.length > 0) {
-        const serverUser = serverUsers.find(u => 
-          u.username === formData.username && 
-          u.password === formData.password && 
-          u.isActive
-        )
+      // Use the permanent authentication system
+      const authResult = await authenticateUserPermanent(formData.username, formData.password);
+      
+      if (authResult.success && authResult.user) {
+        const user = authResult.user;
         
-        if (serverUser) {
-          // Store synced users locally for future use
-          localStorage.setItem('mirage_users', JSON.stringify(serverUsers))
-          
-          // CRITICAL: Ensure role consistency for admin users
-          console.log('🔍 AUTHENTICATION DEBUG - SERVER USER:', {
-            username: serverUser.username,
-            originalRole: serverUser.role,
-            originalPermissions: serverUser.permissions
-          });
-          
-          // Convert server user to client user format
-          const user = {
-            ...serverUser,
-            lastLogin: new Date(),
-            permissions: {
-              canViewCostFromVendor: serverUser.permissions?.canViewCostFromHP || serverUser.permissions?.canViewCostFromVendor || false,
-              canViewSellingPrice: serverUser.permissions?.canViewSellingPrice || true,
-              canViewProfitMargin: serverUser.permissions?.canViewProfitMargin || false,
-              canViewTenderItems: serverUser.permissions?.canViewTenderItems || true,
-              canEditTenders: serverUser.permissions?.canEditTenders || true,
-              canDeleteTenders: serverUser.permissions?.canDeleteTenders || false,
-              canViewFinancialReports: serverUser.permissions?.canViewFinancialReports || false,
-              canManageUsers: serverUser.permissions?.canManageUsers || false,
-              canExportData: serverUser.permissions?.canExportData || false,
-              canViewOptionalFields: serverUser.permissions?.canViewOptionalFields || true
-            }
-          }
-          
-          console.log('✅ FINAL USER OBJECT:', {
-            username: user.username,
-            role: user.role,
-            permissions: user.permissions,
-            isAdmin: user.role === 'admin'
-          });
-          
-          // Log the login for audit trail
-          try {
-            await logChange(user, 'LOGIN', 'USER', {
-              entityId: user.id,
-              entityName: user.username
-            });
-            console.log('✅ Login logged successfully');
-          } catch (logError) {
-            console.error('❌ Failed to log login:', logError);
-            // Continue with login even if logging fails
-          }
-          
-          onLogin(user)
-          return
-        }
-      }
-      
-      // Add UX delay for better user feedback
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Fallback to local authentication
-      let user = await authenticateUserAsync(formData.username, formData.password)
-      
-      if (!user) {
-        user = authenticateUser(formData.username, formData.password)
-      }
-      
-      if (user) {
-        console.log('🔍 AUTHENTICATION DEBUG - LOCAL USER:', {
+        console.log('✅ PERMANENT AUTH SUCCESS:', {
           username: user.username,
           role: user.role,
-          permissions: user.permissions,
-          isAdmin: user.role === 'admin'
+          source: authResult.source,
+          hasWarnings: (authResult.errors?.length || 0) > 0
         });
+
+        // Show warning if there were consistency issues that were auto-fixed
+        if (authResult.errors && authResult.errors.length > 0) {
+          console.warn('⚠️ Authentication warnings (auto-fixed):', authResult.errors);
+        }
         
         // Log the login for audit trail
         try {
@@ -131,14 +57,17 @@ export default function Login({ onLogin }: LoginProps) {
           // Continue with login even if logging fails
         }
         
-        onLogin(user)
+        onLogin(user);
       } else {
-        setError('Invalid username or password')
+        const errorMessage = authResult.errors?.[0] || 'Invalid username or password';
+        setError(errorMessage);
+        console.error('❌ PERMANENT AUTH FAILED:', errorMessage);
       }
-    } catch (err) {
-      setError('Login failed. Please try again.')
+    } catch (error) {
+      console.error('❌ Authentication error:', error);
+      setError('Login failed. Please try again.');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
   }
 
@@ -151,97 +80,112 @@ export default function Login({ onLogin }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div className="text-center">
-          {/* Company Logo */}
-          <div className="mx-auto h-20 w-auto flex items-center justify-center bg-white rounded-lg shadow-lg p-4 mb-6">
-            <img 
-              src="/mirage-logo.png" 
-              alt="Mirage Business Solutions" 
-              className="h-full w-auto object-contain"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md">
+        {/* Company Header */}
+        <div className="text-center mb-8">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
+            <LogIn className="w-8 h-8 text-white" />
           </div>
-          
-          <h2 className="text-3xl font-extrabold text-gray-900">
-            Mirage Offering Tracking System
-          </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Sign in to access your offering management dashboard
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            Mirage Business Solutions
+          </h1>
+          <p className="text-gray-600">
+            Tenders Tracking System
           </p>
+          <div className="mt-2 text-sm text-gray-500">
+            <div>📞 +962 6 569 13 33 | +962 78693 5565</div>
+            <div>📧 m.abuosba@miragebs.com</div>
+            <div>🌐 www.miragebs.com</div>
+          </div>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="bg-white rounded-lg shadow-lg p-6 space-y-4">
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username
-              </label>
+        {/* Login Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+              Username
+            </label>
+            <input
+              type="text"
+              id="username"
+              name="username"
+              value={formData.username}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter your username"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              Password
+            </label>
+            <div className="relative">
               <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Enter your username"
-                value={formData.username}
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
                 onChange={handleInputChange}
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Enter your password"
+                required
+                disabled={isLoading}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                disabled={isLoading}
+              >
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+              </button>
             </div>
+          </div>
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1 relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 pr-10"
-                  placeholder="Enter your password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-gray-400" />
-                  )}
-                </button>
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Authenticating...
               </div>
-            </div>
-
-            {error && (
-              <div className="text-red-600 text-sm bg-red-50 p-3 rounded-md">
-                {error}
+            ) : (
+              <div className="flex items-center justify-center">
+                <LogIn className="w-5 h-5 mr-2" />
+                Sign In
               </div>
             )}
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                <LogIn className="h-5 w-5 text-blue-500 group-hover:text-blue-400" />
-              </span>
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
+          </button>
         </form>
 
-        <div className="text-center text-xs text-gray-500 mt-6">
-          <p>Mirage Business Solutions</p>
-          <p>+962 6 569 13 33 | +962 78693 5565</p>
-          <p>m.abuosba@miragebs.com</p>
-          <p>Wadi Saqra, P.O.Box 268 Amman 11731 Jordan</p>
+        {/* Demo Credentials */}
+        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials:</h3>
+          <div className="space-y-1 text-sm text-gray-600">
+            <div><strong>Admin:</strong> admin / admin123</div>
+            <div><strong>User:</strong> user / user123</div>
+            <div><strong>Basil (Admin):</strong> Basil / password123</div>
+            <div><strong>Dina (Admin):</strong> Dina / password123</div>
+          </div>
+        </div>
+
+        {/* System Info */}
+        <div className="mt-6 text-center text-xs text-gray-400">
+          <div>🔒 Powered by Centralized Authentication Authority</div>
+          <div>🔄 Auto-sync & Role Consistency Protection</div>
         </div>
       </div>
     </div>
