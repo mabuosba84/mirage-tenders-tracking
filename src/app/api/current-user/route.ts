@@ -147,3 +147,43 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { username } = body
+
+    if (!username) {
+      return NextResponse.json(
+        { success: false, error: 'Username required' },
+        { status: 400 }
+      )
+    }
+
+    console.log(`🧹 CLEAR USER SESSIONS: Removing all sessions for user: ${username}`)
+
+    // Find and remove all sessions for this specific user
+    let removedCount = 0
+    Object.keys(currentUserStorage).forEach(sessionId => {
+      if (currentUserStorage[sessionId].username === username) {
+        delete currentUserStorage[sessionId]
+        removedCount++
+      }
+    })
+
+    console.log(`✅ CLEARED SESSIONS: Removed ${removedCount} sessions for user: ${username}`)
+    console.log(`📊 Remaining active sessions: ${Object.keys(currentUserStorage).length}`)
+
+    return NextResponse.json({
+      success: true,
+      message: `Cleared ${removedCount} sessions for user ${username}`,
+      clearedCount: removedCount
+    })
+  } catch (error) {
+    console.error('Error clearing user sessions:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to clear user sessions' },
+      { status: 500 }
+    )
+  }
+}

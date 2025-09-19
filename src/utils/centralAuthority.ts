@@ -215,6 +215,28 @@ export const validateUserConsistency = async (username: string): Promise<UserVal
 };
 
 /**
+ * Clear any existing sessions for a user to ensure fresh login data
+ */
+export const clearUserSessions = async (username: string): Promise<void> => {
+  try {
+    console.log('🧹 CLEARING SESSIONS: Removing cached sessions for', username);
+    const response = await fetch('/api/current-user', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+    
+    if (response.ok) {
+      console.log('✅ SESSIONS CLEARED: Successfully cleared sessions for', username);
+    } else {
+      console.warn('⚠️ SESSIONS CLEAR: Failed to clear sessions for', username);
+    }
+  } catch (error) {
+    console.warn('⚠️ SESSIONS CLEAR: Error clearing sessions:', error);
+  }
+};
+
+/**
  * PERMANENT AUTHENTICATION - Always returns consistent user data
  */
 export const authenticateUserPermanent = async (username: string, password: string): Promise<AuthenticationResult> => {
@@ -248,7 +270,10 @@ export const authenticateUserPermanent = async (username: string, password: stri
     await synchronizeUserToAllSources(authoritativeUser);
   }
 
-  // Step 4: Return the authoritative user with updated last login (removing password)
+  // Step 4: Clear any existing sessions for this user to ensure fresh data
+  await clearUserSessions(username);
+
+  // Step 5: Return the authoritative user with updated last login (removing password)
   const { password: _, ...userWithoutPassword } = authoritativeUser;
   const authenticatedUser: User = {
     ...userWithoutPassword,
