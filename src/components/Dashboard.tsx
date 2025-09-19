@@ -347,14 +347,6 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       />
       
       <main className="container mx-auto px-4 py-8">
-        {/* Railway Sync Status */}
-        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-          <div>
-            <h3 className="text-sm font-medium text-blue-800">🚀 Railway Production Mode - Auto Sync Active</h3>
-            <p className="text-xs text-blue-600">Automatically syncing with Railway every 30 seconds • {tenders.length} leads loaded</p>
-          </div>
-        </div>
-
         {saveMessage && (
           <div className="mb-4 p-4 bg-green-100 border border-green-400 text-green-700 rounded-md">
             {saveMessage}
