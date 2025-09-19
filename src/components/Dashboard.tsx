@@ -82,7 +82,11 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     try {
       // First try to get latest data from server
       try {
-        const response = await fetch('/api/sync')
+        const response = await fetch('/api/sync', {
+          headers: {
+            'X-Current-User': JSON.stringify(user) // Send user authentication
+          }
+        })
         if (response.ok) {
           const serverData = await response.json()
           if (serverData.tenders && Array.isArray(serverData.tenders)) {
@@ -143,6 +147,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Current-User': JSON.stringify(user) // Send user authentication
         },
         body: JSON.stringify({
           users: serverUsers,
@@ -188,6 +193,15 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
   const handleEditTender = (tenderData: Omit<Lead, 'id' | 'lastEditedAt' | 'responseTimeInDays'>) => {
     if (!editingTender) return
     
+    // SECURITY: Check if user has permission to edit this tender
+    const canEditThisTender = user.permissions?.canEditTenders && 
+      (user.role === 'admin' || user.username === editingTender.addedBy)
+    
+    if (!canEditThisTender) {
+      setMessage('❌ Access denied: You can only edit leads you created.')
+      return
+    }
+    
     const updatedTender: Lead = {
       ...editingTender,
       ...tenderData,
@@ -203,15 +217,19 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
     saveTendersLocal(updatedTenders)
     setEditingTender(null)
     setActiveTab('list')
-    setMessage('Lead updated successfully!')
+    setMessage('✅ Lead updated successfully!')
   }
 
   const handleDeleteTender = (id: string) => {
     const tenderToDelete = tenders.find(t => t.id === id)
     if (!tenderToDelete) return
     
-    if (user.role !== 'admin' && tenderToDelete.lastEditedBy !== user.username) {
-      setMessage('You can only delete leads you created.')
+    // SECURITY: Check if user has permission to delete this tender
+    const canDeleteThisTender = user.permissions?.canDeleteTenders && 
+      (user.role === 'admin' || user.username === tenderToDelete.addedBy)
+    
+    if (!canDeleteThisTender) {
+      setMessage('❌ Access denied: You can only delete leads you created.')
       return
     }
     
