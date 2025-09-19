@@ -513,76 +513,102 @@ async function forceNetworkSync(): Promise<void> {
 }
 
 /**
- * Save current user to centralized storage
+ * Save current user to centralized storage with proper session management
  */
 export const saveCurrentUserToStorage = async (user: User): Promise<void> => {
   try {
-    // Save to server API for cross-device access
-    await fetch('/api/current-user', {
+    // Save to server API with proper session handling
+    const response = await fetch('/api/current-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user })
+      body: JSON.stringify({ user }),
+      credentials: 'include' // Include cookies for session management
     })
     
-    // Also save to localStorage for immediate access
+    if (response.ok) {
+      const data = await response.json()
+      console.log('✅ Current user saved with session:', user.username, `(${data.sessionId?.substring(0, 8)}...)`)
+    } else {
+      throw new Error('Server response not OK')
+    }
+    
+    // Also save to localStorage for immediate access (session-specific)
     localStorage.setItem('currentUser', JSON.stringify(user))
-    console.log('✅ Current user saved to centralized storage:', user.username)
+    console.log('✅ Current user saved to localStorage:', user.username)
   } catch (error) {
     console.error('❌ Failed to save current user to central storage:', error)
     // Fallback to localStorage only
     localStorage.setItem('currentUser', JSON.stringify(user))
+    console.log('⚠️ Fallback: Using localStorage only for user:', user.username)
   }
 }
 
 /**
- * Load current user from centralized storage
+ * Load current user from centralized storage with proper session management
  */
 export const loadCurrentUserFromStorage = async (): Promise<User | null> => {
   try {
-    // Try to load from server first
-    const response = await fetch('/api/current-user')
+    // Try to load from server with session credentials first
+    const response = await fetch('/api/current-user', {
+      credentials: 'include' // Include cookies for session management
+    })
+    
     if (response.ok) {
       const data = await response.json()
       if (data.success && data.user) {
-        // Update localStorage with fresh data
+        console.log('✅ Current user loaded from server session:', data.user.username, `(${data.sessionId?.substring(0, 8)}...)`)
+        // Update localStorage with fresh session data
         localStorage.setItem('currentUser', JSON.stringify(data.user))
         return data.user
+      } else {
+        console.log('ℹ️ No user session found on server')
       }
     }
   } catch (error) {
-    console.warn('⚠️ Failed to load user from central storage, using localStorage:', error)
+    console.warn('⚠️ Failed to load user from server session, using localStorage:', error)
   }
   
   // Fallback to localStorage
   try {
     const savedUser = localStorage.getItem('currentUser')
     if (savedUser) {
-      return JSON.parse(savedUser)
+      const user = JSON.parse(savedUser)
+      console.log('✅ Current user loaded from localStorage:', user.username)
+      return user
     }
   } catch (error) {
     console.error('❌ Failed to parse current user from localStorage:', error)
   }
   
+  console.log('ℹ️ No current user found in any storage')
   return null
 }
 
 /**
- * Remove current user from centralized storage
+ * Remove current user from centralized storage with proper session management
  */
 export const removeCurrentUserFromStorage = async (): Promise<void> => {
   try {
-    // Remove from server
-    await fetch('/api/current-user', {
-      method: 'DELETE'
+    // Remove from server session
+    const response = await fetch('/api/current-user', {
+      method: 'DELETE',
+      credentials: 'include' // Include cookies for session management
     })
+    
+    if (response.ok) {
+      console.log('✅ Current user session removed from server')
+    } else {
+      console.warn('⚠️ Failed to remove user session from server')
+    }
     
     // Remove from localStorage
     localStorage.removeItem('currentUser')
-    console.log('✅ Current user removed from centralized storage')
+    console.log('✅ Current user removed from localStorage')
   } catch (error) {
-    console.error('❌ Failed to remove user from central storage:', error)
-    // Fallback to localStorage only
+    console.error('❌ Failed to remove current user from central storage:', error)
+    // Still remove from localStorage
     localStorage.removeItem('currentUser')
+    console.log('⚠️ Fallback: Removed user from localStorage only')
   }
 }
 
