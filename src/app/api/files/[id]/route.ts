@@ -17,7 +17,20 @@ export async function GET(
     
     // Check if file exists
     if (!fs.existsSync(filePath)) {
-      console.log('File not found:', fileId);
+      console.log('File not found:', fileId, 'at path:', filePath);
+      
+      // Try alternative paths for backwards compatibility
+      const altPath1 = path.join(process.cwd(), 'uploads', fileId);
+      const altPath2 = path.join(process.cwd(), 'data', fileId);
+      
+      if (fs.existsSync(altPath1)) {
+        console.log('Found file in alternative location:', altPath1);
+        return serveFile(altPath1, fileId);
+      } else if (fs.existsSync(altPath2)) {
+        console.log('Found file in alternative location:', altPath2);
+        return serveFile(altPath2, fileId);
+      }
+      
       return new NextResponse('File not found', { status: 404 });
     }
     
@@ -73,8 +86,8 @@ export async function POST(request: NextRequest) {
       uploadedAt: new Date().toISOString()
     };
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'uploads');
+    // Create uploads directory if it doesn't exist  
+    const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }

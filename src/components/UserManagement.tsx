@@ -83,20 +83,20 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
 
   // Simple, immediate user loading
   useEffect(() => {
-    const loadUsers = () => {
+    const loadUsers = async () => {
       console.log('🔄 SIMPLE LOAD: Getting all users');
-      const allUsers = getAllAuthoritativeUsers();
+      const allUsers = await getAllAuthoritativeUsers();
       console.log('✅ SIMPLE LOAD: Got', allUsers.length, 'users');
       setUsers(allUsers);
     };
     
-    loadUsers();
+    loadUsers().catch(console.error);
   }, [])
 
   // Simple refresh function
-  const refreshUsersFromCentralAuthority = () => {
+  const refreshUsersFromCentralAuthority = async () => {
     console.log('🔄 SIMPLE REFRESH: Refreshing user list');
-    const freshUsers = getAllAuthoritativeUsers();
+    const freshUsers = await getAllAuthoritativeUsers();
     setUsers(freshUsers);
     console.log('✅ SIMPLE REFRESH: Refreshed with', freshUsers.length, 'users');
   };
@@ -202,7 +202,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       }
 
       // Add user to CENTRAL AUTHORITY ONLY
-      addUserToCentralAuthority(newUser, userForm.password);
+      await addUserToCentralAuthority(newUser, userForm.password);
       console.log('✅ USER ADDED: Successfully added to central authority:', newUser.username);
       
       // Log the user creation for audit trail
@@ -219,7 +219,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       }
       
       // Refresh from central authority
-      refreshUsersFromCentralAuthority();
+      await refreshUsersFromCentralAuthority();
       setShowAddUser(false)
       resetForm()
       
@@ -241,44 +241,51 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
     }
   }
 
-  const handleEditUser = () => {
+  const handleEditUser = async () => {
     if (!validateUserForm() || !editingUser) return
 
-    const updatedUser: User = {
-      ...editingUser,
-      username: userForm.username,
-      email: userForm.email,
-      name: userForm.name,
-      role: userForm.role,
-      isActive: userForm.isActive,
-      permissions: userForm.permissions,
-      updatedAt: new Date()
-    }
+    setIsLoading(true)
+    try {
+      const updatedUser: User = {
+        ...editingUser,
+        username: userForm.username,
+        email: userForm.email,
+        name: userForm.name,
+        role: userForm.role,
+        isActive: userForm.isActive,
+        permissions: userForm.permissions,
+        updatedAt: new Date()
+      }
 
-    console.log('📝 SIMPLE EDIT: Updating user', updatedUser.username, 'role:', updatedUser.role);
-    
-    // Simple, direct update
-    const success = updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
-    
-    if (success) {
-      console.log('✅ USER UPDATED SUCCESSFULLY');
+      console.log('📝 SIMPLE EDIT: Updating user', updatedUser.username, 'role:', updatedUser.role);
       
-      // Simple refresh
-      refreshUsersFromCentralAuthority()
+      // Simple, direct update with await
+      const success = await updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
       
-      // Show success state for UI feedback
-      setUserUpdateSuccess(true);
-      
-      // Auto-close the dialog after success
-      setTimeout(() => {
-        setEditingUser(null);
-        resetForm();
-        setUserUpdateSuccess(false);
-      }, 2000);
-      
-    } else {
-      console.error('❌ USER UPDATE FAILED');
-      alert('Failed to update user. Please try again.');
+      if (success) {
+        console.log('✅ USER UPDATED SUCCESSFULLY');
+        
+        // Simple refresh
+        await refreshUsersFromCentralAuthority()
+        
+        // Show success state for UI feedback
+        setUserUpdateSuccess(true);
+        
+        // Auto-close the dialog after success
+        setTimeout(() => {
+          setEditingUser(null);
+          resetForm();
+          setUserUpdateSuccess(false);
+        }, 2000);
+        
+      } else {
+        console.error('❌ USER UPDATE FAILED');
+        alert('Failed to update user. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error editing user:', error)
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -301,7 +308,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       const userToDelete = users.find(u => u.id === userId)
       
       // Delete user from CENTRAL AUTHORITY ONLY
-      const success = deleteUserFromCentralAuthority(userId);
+      const success = await deleteUserFromCentralAuthority(userId);
       if (success) {
         console.log('✅ USER DELETED: Successfully removed from central authority');
         
@@ -321,7 +328,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         }
         
         // Refresh from central authority
-        refreshUsersFromCentralAuthority();
+        await refreshUsersFromCentralAuthority();
         
         // Trigger automatic sync after deleting user
         if (onAutoSync) {
@@ -363,11 +370,11 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
         }
         
         // Update user in CENTRAL AUTHORITY ONLY
-        updateUserInCentralAuthority(updatedUser);
+        await updateUserInCentralAuthority(updatedUser);
         console.log('✅ USER STATUS UPDATED: Successfully updated in central authority:', updatedUser.username);
         
         // Refresh from central authority
-        refreshUsersFromCentralAuthority();
+        await refreshUsersFromCentralAuthority();
       }
     } catch (error) {
       console.error('Error updating user status:', error)
@@ -386,7 +393,7 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
           const user = users.find(u => u.id === passwordReset.userId)
       if (user) {
         // Reset password in CENTRAL AUTHORITY ONLY
-        updateUserInCentralAuthority(user, passwordReset.newPassword);
+        await updateUserInCentralAuthority(user, passwordReset.newPassword);
         console.log('✅ PASSWORD RESET: Successfully updated in central authority:', user.username);
         
         alert('Password has been reset successfully!')

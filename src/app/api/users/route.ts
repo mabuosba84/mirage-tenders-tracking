@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   
   try {
     // Get users from central authority (single source of truth)
-    const users = getAllAuthoritativeUsers();
+    const users = await getAllAuthoritativeUsers();
     
     console.log('✅ CENTRAL AUTHORITY: Loaded', users.length, 'users -', users.map(u => u.username).join(', '));
     return NextResponse.json({

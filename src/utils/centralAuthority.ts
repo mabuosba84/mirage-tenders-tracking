@@ -3,6 +3,7 @@
 // Prevents role inconsistencies across multiple storage sources
 
 import { User } from '@/types';
+import { saveUsersToStorage, loadUsersFromStorage, saveCurrentUserToStorage, loadCurrentUserFromStorage, removeCurrentUserFromStorage } from './centralStorage';
 
 interface AuthUser extends User {
   password: string;
@@ -154,21 +155,42 @@ const getDefaultUserAuthority = (): AuthUser[] => [
 // SINGLE SOURCE OF TRUTH - simplified initialization
 let CENTRAL_USER_AUTHORITY: AuthUser[] = getDefaultUserAuthority();
 
-// Simple initialization that runs immediately
-if (typeof window !== 'undefined') {
-  // Try to load from localStorage immediately
+// Initialize from central storage instead of localStorage
+export const initializeCentralAuthority = async (): Promise<void> => {
+  if (typeof window === 'undefined') return;
+  
   try {
-    const storedAuthority = localStorage.getItem('mirage_central_authority');
-    if (storedAuthority) {
-      const parsed = JSON.parse(storedAuthority);
-      if (Array.isArray(parsed) && parsed.length >= 5) { // Ensure we have all users
-        CENTRAL_USER_AUTHORITY = parsed;
-        console.log('✅ SIMPLE INIT: Loaded from localStorage:', parsed.length, 'users');
-      }
+    const storedUsers = await loadUsersFromStorage();
+    if (storedUsers && Array.isArray(storedUsers) && storedUsers.length >= 5) {
+      // Convert to AuthUser format with passwords
+      const defaults = getDefaultUserAuthority();
+      const authUsers = storedUsers.map((user: User) => {
+        const defaultUser = defaults.find(d => d.username === user.username);
+        return {
+          ...user,
+          password: defaultUser?.password || 'password123',
+          updatedAt: new Date()
+        };
+      });
+      CENTRAL_USER_AUTHORITY = authUsers;
+      console.log('✅ CENTRAL AUTHORITY INIT: Loaded from central storage:', authUsers.length, 'users');
+    } else {
+      console.log('⚠️ CENTRAL AUTHORITY INIT: Using defaults, will save to central storage');
+      // Save defaults to central storage
+      const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+        const { password: _, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      await saveUsersToStorage(allUsers);
     }
   } catch (error) {
-    console.log('⚠️ SIMPLE INIT: localStorage failed, using defaults');
+    console.log('⚠️ CENTRAL AUTHORITY INIT: Failed to load from central storage, using defaults');
   }
+};
+
+// Auto-initialize when module loads (for browser)
+if (typeof window !== 'undefined') {
+  initializeCentralAuthority().catch(console.error);
 }
 
 /**
@@ -198,9 +220,8 @@ export const reloadUsersFromServer = async (): Promise<boolean> => {
         CENTRAL_USER_AUTHORITY.length = 0; // Clear array
         CENTRAL_USER_AUTHORITY.push(...authUsers); // Add new users
         
-        // Update localStorage
-        localStorage.setItem('mirage_central_authority', JSON.stringify(authUsers));
-        localStorage.setItem('mirage_users', JSON.stringify(serverData.users));
+        // Update central storage instead of localStorage
+        await saveUsersToStorage(serverData.users);
         
         console.log('✅ FORCE RELOAD COMPLETE: Users updated from server');
         return true;
@@ -254,14 +275,14 @@ export const validateUserConsistency = async (username: string): Promise<UserVal
     console.warn('Could not validate server user consistency:', error);
   }
 
-  // Check local storage
+  // Check central storage instead of localStorage
   try {
-    const localData = localStorage.getItem('mirage_users');
+    const localData = await loadUsersFromStorage();
     if (localData) {
-      localUsers = JSON.parse(localData);
+      localUsers = localData;
     }
   } catch (error) {
-    console.warn('Could not validate local user consistency:', error);
+    console.warn('Could not validate central storage user consistency:', error);
   }
 
   // Compare roles and permissions
@@ -313,9 +334,13 @@ export const authenticateUserPermanent = async (username: string, password: stri
   if (CENTRAL_USER_AUTHORITY.length < 5) {
     console.warn('⚠️ FIXING: Central authority incomplete, forcing reset');
     CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
-    // Save to localStorage
+    // Save to central storage instead of localStorage
     if (typeof window !== 'undefined') {
-      localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+      const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+        const { password: _, ...userWithoutPassword } = u;
+        return userWithoutPassword;
+      });
+      await saveUsersToStorage(allUsers);
     }
   }
   
@@ -382,9 +407,9 @@ export const authenticateUserPermanent = async (username: string, password: stri
 export const synchronizeUserToAllSources = async (user: User): Promise<void> => {
   console.log('🔄 SYNC: Synchronizing user to all sources:', user.username);
 
-  // Sync to localStorage
+  // Sync to central storage instead of localStorage
   try {
-    const localUsers: User[] = JSON.parse(localStorage.getItem('mirage_users') || '[]');
+    const localUsers: User[] = await loadUsersFromStorage() || [];
     const userIndex = localUsers.findIndex(u => u.username === user.username);
     
     if (userIndex >= 0) {
@@ -393,10 +418,10 @@ export const synchronizeUserToAllSources = async (user: User): Promise<void> => 
       localUsers.push({ ...user });
     }
     
-    localStorage.setItem('mirage_users', JSON.stringify(localUsers));
-    console.log('✅ SYNC: Local storage updated');
+    await saveUsersToStorage(localUsers);
+    console.log('✅ SYNC: Central storage updated');
   } catch (error) {
-    console.error('❌ SYNC: Failed to update local storage:', error);
+    console.error('❌ SYNC: Failed to update central storage:', error);
   }
 
   // Sync to server
@@ -423,13 +448,17 @@ export const synchronizeUserToAllSources = async (user: User): Promise<void> => 
 /**
  * Get all authoritative users - ALWAYS returns all users
  */
-export const getAllAuthoritativeUsers = (): User[] => {
+export const getAllAuthoritativeUsers = async (): Promise<User[]> => {
   // Ensure we always have the minimum required users
   if (CENTRAL_USER_AUTHORITY.length < 5) {
     console.warn('⚠️ MISSING USERS: Only', CENTRAL_USER_AUTHORITY.length, 'users found, resetting to defaults');
     CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
-    // Save to localStorage
-    localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+    // Save to central storage instead of localStorage
+    const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+      const { password: _, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    await saveUsersToStorage(allUsers);
   }
   
   // Return clean copy without passwords
@@ -445,7 +474,7 @@ export const getAllAuthoritativeUsers = (): User[] => {
 /**
  * Add new user to central authority (for UserManagement component)
  */
-export const addUserToCentralAuthority = (user: User, password: string): void => {
+export const addUserToCentralAuthority = async (user: User, password: string): Promise<void> => {
   const authUser: AuthUser = { ...user, password, updatedAt: new Date() };
   const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.username.toLowerCase() === user.username.toLowerCase());
   if (existingIndex >= 0) {
@@ -456,12 +485,12 @@ export const addUserToCentralAuthority = (user: User, password: string): void =>
     console.log('✅ CENTRAL AUTHORITY: Added new user:', user.username);
   }
   
-  // IMMEDIATELY sync to localStorage for persistence
+  // IMMEDIATELY sync to central storage for persistence instead of localStorage
   const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
     const { password: _, ...userWithoutPassword } = u;
     return userWithoutPassword;
   });
-  localStorage.setItem('mirage_users', JSON.stringify(allUsers));
+  await saveUsersToStorage(allUsers);
   
   // Auto-sync to server
   synchronizeUserToAllSources(user);
@@ -470,7 +499,7 @@ export const addUserToCentralAuthority = (user: User, password: string): void =>
 /**
  * Update user in central authority - SIMPLE and WORKING
  */
-export const updateUserInCentralAuthority = (user: User, password?: string): boolean => {
+export const updateUserInCentralAuthority = async (user: User, password?: string): Promise<boolean> => {
   console.log('🔒 SIMPLE UPDATE: Starting update for', user.username, 'role:', user.role);
   
   try {
@@ -491,9 +520,13 @@ export const updateUserInCentralAuthority = (user: User, password?: string): boo
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
     console.log('✅ UPDATED IN MEMORY:', user.username, 'role:', user.role);
     
-    // Save to localStorage immediately
-    localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
-    console.log('✅ SAVED TO LOCALSTORAGE');
+    // Save to central storage immediately instead of localStorage
+    const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
+      const { password: _, ...userWithoutPassword } = u;
+      return userWithoutPassword;
+    });
+    await saveUsersToStorage(allUsers);
+    console.log('✅ SAVED TO CENTRAL STORAGE');
     
     // Clear user sessions if it's a role change
     if (existingUser.role !== user.role) {
@@ -517,18 +550,18 @@ export const updateUserInCentralAuthority = (user: User, password?: string): boo
 /**
  * Delete user from central authority
  */
-export const deleteUserFromCentralAuthority = (userId: string): boolean => {
+export const deleteUserFromCentralAuthority = async (userId: string): Promise<boolean> => {
   const userIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === userId);
   if (userIndex >= 0) {
     const removedUser = CENTRAL_USER_AUTHORITY.splice(userIndex, 1)[0];
     console.log('✅ CENTRAL AUTHORITY: Deleted user:', removedUser.username);
     
-    // IMMEDIATELY sync to localStorage
+    // IMMEDIATELY sync to central storage instead of localStorage
     const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
       const { password: _, ...userWithoutPassword } = u;
       return userWithoutPassword;
     });
-    localStorage.setItem('mirage_users', JSON.stringify(allUsers));
+    await saveUsersToStorage(allUsers);
     
     return true;
   }

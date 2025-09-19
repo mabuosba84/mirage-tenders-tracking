@@ -72,7 +72,7 @@ export default function Dashboard({ user, onLogout }: DashboardProps) {
       const currentTenders = await loadTendersFromStorage() || []
       
       // Sync current users to server on dashboard load from CENTRAL AUTHORITY ONLY
-      const currentUsers = getAllAuthoritativeUsers()
+      const currentUsers = await getAllAuthoritativeUsers()
       
       // Create server-compatible user objects with default passwords
       const serverUsers = currentUsers.map((user: User) => ({

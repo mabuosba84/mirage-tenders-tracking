@@ -173,13 +173,9 @@ const centralStorage = new CentralStorage()
 // Enhanced storage functions that sync across domains
 export const saveTendersToStorage = async (tenders: Lead[]): Promise<void> => {
   try {
-    console.log('🔄 Saving tenders to storage - Count:', tenders.length)
+    console.log('🔄 Saving tenders to central storage - Count:', tenders.length)
     
-    // 1. Save to localStorage (immediate local persistence)
-    localStorage.setItem(TENDERS_KEY, JSON.stringify(tenders))
-    console.log('✅ Saved to localStorage')
-    
-    // 2. Save to server via API (network persistence) - CRITICAL FOR CROSS-DOMAIN
+    // 1. Save to server via API (primary persistence for Railway)
     try {
       const response = await fetch('/api/sync', {
         method: 'POST',
@@ -201,81 +197,53 @@ export const saveTendersToStorage = async (tenders: Lead[]): Promise<void> => {
       }
     } catch (serverError) {
       console.error('❌ Server save error:', serverError)
-      // Don't throw here - we still have localStorage as fallback
+      // Try IndexedDB as fallback
     }
     
-    // 3. Save to IndexedDB (cross-domain persistence)
+    // 2. Save to IndexedDB (fallback persistence)
     try {
       await centralStorage.saveTenders(tenders)
       console.log('✅ Saved to IndexedDB')
     } catch (indexedDBError) {
       console.error('⚠️ IndexedDB save failed:', indexedDBError)
-      // Don't throw here - localStorage and server are primary
+      throw new Error('Complete storage failure - both server and IndexedDB failed')
     }
     
-    // 4. Update sync timestamp
-    localStorage.setItem(SYNC_TIMESTAMP_KEY, Date.now().toString())
     console.log('✅ All storage operations completed')
     
   } catch (error) {
     console.error('❌ Error in saveTendersToStorage:', error)
-    // Ultimate fallback - ensure localStorage at minimum
-    try {
-      localStorage.setItem('mirage_tenders', JSON.stringify(tenders))
-      console.log('⚠️ Fallback: Saved to localStorage only')
-    } catch (fallbackError) {
-      console.error('💥 Critical: Even localStorage failed:', fallbackError)
-      throw new Error('Complete storage failure - cannot save tender data')
-    }
+    throw error
   }
 }
 
 export const loadTendersFromStorage = async (): Promise<Lead[]> => {
   try {
-    console.log('🔄 Loading tenders from all storage sources...')
+    console.log('🔄 Loading tenders from central storage sources...')
     
-    // 1. First, try to load from server (most authoritative source)
+    // 1. First, try to load from server (primary source for Railway)
     try {
       const response = await fetch('/api/sync')
       if (response.ok) {
         const syncData = await response.json()
         if (syncData.tenders && Array.isArray(syncData.tenders) && syncData.tenders.length > 0) {
           console.log('✅ Loaded', syncData.tenders.length, 'tenders from server')
-          // Update localStorage with server data
-          localStorage.setItem('mirage_tenders', JSON.stringify(syncData.tenders))
           return syncData.tenders
         }
       }
     } catch (serverError) {
-      console.warn('⚠️ Server load failed, trying local sources:', serverError)
+      console.warn('⚠️ Server load failed, trying IndexedDB:', serverError)
     }
     
-    // 2. Try IndexedDB (cross-domain)
+    // 2. Try IndexedDB (fallback)
     try {
       const centralTenders = await centralStorage.loadTenders()
       if (centralTenders.length > 0) {
         console.log('✅ Found', centralTenders.length, 'tenders in IndexedDB')
-        // Update localStorage with central data
-        localStorage.setItem('mirage_tenders', JSON.stringify(centralTenders))
         return centralTenders
       }
     } catch (indexedDBError) {
       console.warn('⚠️ IndexedDB load failed:', indexedDBError)
-    }
-    
-    // 3. Try localStorage (current domain)
-    const localData = localStorage.getItem('mirage_tenders')
-    if (localData) {
-      const tenders = JSON.parse(localData)
-      console.log('✅ Found', tenders.length, 'tenders in localStorage')
-      // Try to save to central storage for future access
-      try {
-        await centralStorage.saveTenders(tenders)
-        console.log('✅ Backed up localStorage data to IndexedDB')
-      } catch (backupError) {
-        console.warn('⚠️ Failed to backup to IndexedDB:', backupError)
-      }
-      return tenders
     }
     
     console.log('ℹ️ No tender data found in any storage location')
@@ -283,60 +251,34 @@ export const loadTendersFromStorage = async (): Promise<Lead[]> => {
     
   } catch (error) {
     console.error('❌ Error in loadTendersFromStorage:', error)
-    // Ultimate fallback
-    try {
-      const fallbackData = localStorage.getItem('mirage_tenders')
-      return fallbackData ? JSON.parse(fallbackData) : []
-    } catch (fallbackError) {
-      console.error('💥 Critical: Even fallback failed:', fallbackError)
-      return []
-    }
+    return []
   }
 }
 
 export const saveUsersToStorage = async (users: User[]): Promise<void> => {
   try {
-    // Save to localStorage (current domain)
-    localStorage.setItem(USERS_KEY, JSON.stringify(users))
-    
-    // Save to IndexedDB (cross-domain)
+    // Save to IndexedDB (primary persistence for Railway)
     await centralStorage.saveUsers(users)
-    
-    // Update sync timestamp
-    localStorage.setItem(SYNC_TIMESTAMP_KEY, Date.now().toString())
+    console.log('✅ Saved users to IndexedDB')
   } catch (error) {
     console.error('Error saving users:', error)
-    // Fallback to localStorage only
-    localStorage.setItem('mirage_users', JSON.stringify(users))
+    throw error
   }
 }
 
 export const loadUsersFromStorage = async (): Promise<User[]> => {
   try {
-    // Try to load from IndexedDB first (most recent data)
+    // Load from IndexedDB (primary source for Railway)
     const centralUsers = await centralStorage.loadUsers()
     
     if (centralUsers.length > 0) {
-      // Update localStorage with central data
-      localStorage.setItem('mirage_users', JSON.stringify(centralUsers))
       return centralUsers
-    }
-    
-    // Fallback to localStorage
-    const localData = localStorage.getItem('mirage_users')
-    if (localData) {
-      const users = JSON.parse(localData)
-      // Save to central storage for future access
-      await centralStorage.saveUsers(users)
-      return users
     }
     
     return []
   } catch (error) {
     console.error('Error loading users:', error)
-    // Final fallback to localStorage only
-    const localData = localStorage.getItem('mirage_users')
-    return localData ? JSON.parse(localData) : []
+    return []
   }
 }
 

@@ -5,7 +5,7 @@ export async function GET(request: NextRequest) {
   console.log('🔍 CONSISTENCY CHECK: Starting validation of all users');
   
   try {
-    const authoritativeUsers = getAllAuthoritativeUsers();
+    const authoritativeUsers = await getAllAuthoritativeUsers();
     const validationResults = [];
     let totalInconsistencies = 0;
     
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
     
-    const authoritativeUsers = getAllAuthoritativeUsers();
+    const authoritativeUsers = await getAllAuthoritativeUsers();
     const fixResults = [];
     let totalFixed = 0;
     

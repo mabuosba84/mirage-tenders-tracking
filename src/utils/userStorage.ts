@@ -1,7 +1,8 @@
 import { User } from '@/types'
 import { saveUsersToStorage, loadUsersFromStorage } from './centralStorage'
 
-const USERS_STORAGE_KEY = 'mirage_users'
+// REMOVED localStorage key - using only central storage
+// const USERS_STORAGE_KEY = 'mirage_users'
 
 // Default users that are always available
 export const getDefaultUsers = (): User[] => [
@@ -105,59 +106,41 @@ export const getDefaultUsers = (): User[] => [
 
 // User credentials storage (in production this would be handled by backend authentication)
 export const getUserCredentials = (): Record<string, string> => {
-  if (typeof window === 'undefined') return {}
-  
-  const stored = localStorage.getItem('mirage_user_credentials')
+  // DEPRECATED - Use central authority authentication instead
+  console.warn('getUserCredentials() is deprecated - use central authority for authentication')
   const defaultCredentials = {
     'admin': 'admin123',
     'user': 'user123',
     'Basil': 'password123',
-    'Dina': 'password123'
+    'Dina': 'password123',
+    'AbuOsba': 'AbuOsba123'
   }
-  
-  if (stored) {
-    return { ...defaultCredentials, ...JSON.parse(stored) }
-  }
-  
   return defaultCredentials
 }
 
 export const setUserCredentials = (credentials: Record<string, string>) => {
-  if (typeof window === 'undefined') return
-  
-  const current = getUserCredentials()
-  const updated = { ...current, ...credentials }
-  localStorage.setItem('mirage_user_credentials', JSON.stringify(updated))
+  // DEPRECATED - Use central authority for user management instead
+  console.warn('setUserCredentials() is deprecated - use central authority for user management')
 }
 
 export const getAllUsersAsync = async (): Promise<User[]> => {
   if (typeof window === 'undefined') return getDefaultUsers()
   
   try {
-    // Try to load from central storage first (for cross-device sync)
+    // Load from central storage ONLY - no localStorage fallback
     const centralUsers = await loadUsersFromStorage()
     if (centralUsers && centralUsers.length > 0) {
       console.log('Loaded users from central storage:', centralUsers.length)
-      // Store in localStorage for immediate access
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(centralUsers))
       return centralUsers.map((user: User) => ensureUserPermissions(user))
     }
   } catch (err) {
-    console.log('Central storage not available, using localStorage:', err)
+    console.log('Central storage not available:', err)
   }
   
-  // Fallback to localStorage
-  const stored = localStorage.getItem(USERS_STORAGE_KEY)
-  if (stored) {
-    const users = JSON.parse(stored)
-    return users.map((user: User) => ensureUserPermissions(user))
-  }
-  
-  // Initialize with default users
+  // Initialize with default users and save to central storage
   const defaultUsers = getDefaultUsers()
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))
   
-  // Save to central storage for future cross-device access
+  // Save to central storage for future access
   try {
     await saveUsersToStorage(defaultUsers)
     console.log('Saved default users to central storage')
@@ -171,45 +154,22 @@ export const getAllUsersAsync = async (): Promise<User[]> => {
 export const getAllUsers = (): User[] => {
   if (typeof window === 'undefined') return getDefaultUsers()
   
-  // Try to load from central storage first (for cross-device sync)
-  loadUsersFromStorage().then(centralUsers => {
-    if (centralUsers && centralUsers.length > 0) {
-      // Store in localStorage for immediate access
-      localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(centralUsers))
-    }
-  }).catch(err => {
-    console.log('Central storage not available, using localStorage:', err)
-  })
-  
-  const stored = localStorage.getItem(USERS_STORAGE_KEY)
-  if (stored) {
-    const users = JSON.parse(stored)
-    // Ensure all users have complete permissions
-    return users.map((user: User) => ensureUserPermissions(user))
-  }
-  
-  // Initialize with default users
-  const defaultUsers = getDefaultUsers()
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(defaultUsers))
-  
-  // Also save to central storage for cross-device access
-  saveUsersToStorage(defaultUsers).catch(err => {
-    console.log('Could not save to central storage:', err)
-  })
-  
-  return defaultUsers
+  // This is now deprecated - use getAllUsersAsync() instead
+  // Return default users since we can't use async here
+  console.warn('getAllUsers() is deprecated - use getAllUsersAsync() for central storage access')
+  return getDefaultUsers()
 }
 
-export const saveUsers = (users: User[]) => {
+export const saveUsers = async (users: User[]) => {
   if (typeof window === 'undefined') return
   
-  // Save to localStorage for immediate access
-  localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users))
-  
-  // Also save to central storage for cross-device sync
-  saveUsersToStorage(users).catch(err => {
-    console.log('Could not save users to central storage:', err)
-  })
+  // Save to central storage ONLY - no localStorage
+  try {
+    await saveUsersToStorage(users)
+    console.log('Saved users to central storage')
+  } catch (err) {
+    console.error('Could not save users to central storage:', err)
+  }
 }
 
 export const addUser = (user: User, password: string) => {
