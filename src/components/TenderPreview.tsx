@@ -638,36 +638,36 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6 rounded-t-lg">
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4 sm:p-6 rounded-t-lg">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">Tender Preview</h2>
-              <p className="text-blue-100 mt-1">Tender ID: #{tender.id}</p>
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl sm:text-2xl font-bold truncate">Tender Preview</h2>
+              <p className="text-blue-100 mt-1 text-sm sm:text-base">Tender ID: #{tender.id}</p>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 sm:space-x-2 ml-2">
               {user.permissions?.canExportData && (
                 <button
                   onClick={handleExportPDF}
                   disabled={isExporting}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
+                  className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
                   title="Export to PDF"
                 >
                   <Download className="h-4 w-4" />
-                  <span className="hidden sm:inline">Export PDF</span>
+                  <span className="hidden md:inline">Export PDF</span>
                 </button>
               )}
               {user.permissions?.canExportData && (
                 <button
                   onClick={handlePrint}
                   disabled={isExporting}
-                  className="flex items-center space-x-2 px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
+                  className="flex items-center space-x-1 sm:space-x-2 px-2 sm:px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 rounded-md transition-colors disabled:opacity-50"
                   title="Print"
                 >
                   <Printer className="h-4 w-4" />
-                  <span className="hidden sm:inline">Print</span>
+                  <span className="hidden md:inline">Print</span>
                 </button>
               )}
               <button
@@ -682,20 +682,20 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Status Banner */}
-          <div className={`inline-flex px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(tender.tenderStatus)}`}>
+          <div className={`inline-flex px-3 sm:px-4 py-2 rounded-full text-sm font-semibold border ${getStatusColor(tender.tenderStatus)}`}>
             {tender.tenderStatus}
           </div>
 
           {/* Customer Information */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
             <div className="flex items-center space-x-2 mb-3">
               <UserIcon className="h-5 w-5 text-blue-600" />
               <h3 className="font-semibold text-blue-900">Customer Information</h3>
             </div>
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-bold text-blue-800">{tender.customerName}</p>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+              <p className="text-lg font-bold text-blue-800 break-words">{tender.customerName}</p>
               <div className="flex flex-wrap gap-2">
                 {tender.category.map((cat, index) => (
                   <span key={`${tender.id}-category-${cat}-${index}`} className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full border ${getCategoryColor(cat)}`}>
@@ -707,50 +707,50 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           </div>
 
           {/* Main Information Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {/* Tender Announcement Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-purple-600" />
-                <h3 className="font-semibold text-gray-900">Tender Announcement</h3>
+                <Calendar className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Tender Announcement</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.tenderAnnouncementDate)}</p>
+              <p className="text-gray-700 text-sm sm:text-base break-words">{formatDate(tender.tenderAnnouncementDate)}</p>
             </div>
 
             {/* Request Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-indigo-600" />
-                <h3 className="font-semibold text-gray-900">Request Date</h3>
+                <Calendar className="h-4 sm:h-5 w-4 sm:w-5 text-indigo-600" />
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Request Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.requestDate)}</p>
+              <p className="text-gray-700 text-sm sm:text-base break-words">{formatDate(tender.requestDate)}</p>
             </div>
 
             {/* Submission Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-gray-900">Submission Date</h3>
+                <Calendar className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600" />
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Submission Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.submissionDate)}</p>
+              <p className="text-gray-700 text-sm sm:text-base break-words">{formatDate(tender.submissionDate)}</p>
             </div>
 
             {/* Price Request Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-orange-600" />
-                <h3 className="font-semibold text-gray-900">Price Request Date</h3>
+                <Calendar className="h-4 sm:h-5 w-4 sm:w-5 text-orange-600" />
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Price Request Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.dateOfPriceRequestToVendor)}</p>
+              <p className="text-gray-700 text-sm sm:text-base break-words">{formatDate(tender.dateOfPriceRequestToVendor)}</p>
             </div>
 
             {/* Price Received Date */}
-            <div className="bg-gray-50 rounded-lg p-4">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-2">
-                <Calendar className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-gray-900">Price Received Date</h3>
+                <Calendar className="h-4 sm:h-5 w-4 sm:w-5 text-green-600" />
+                <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Price Received Date</h3>
               </div>
-              <p className="text-gray-700">{formatDate(tender.dateOfPriceReceivedFromVendor)}</p>
+              <p className="text-gray-700 text-sm sm:text-base break-words">{formatDate(tender.dateOfPriceReceivedFromVendor)}</p>
             </div>
 
 
@@ -758,21 +758,21 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
 
           {/* Response Time Analysis */}
           {(tender.dateOfPriceRequestToVendor || tender.dateOfPriceReceivedFromVendor) && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
               <div className="flex items-center space-x-2 mb-3">
-                <Clock className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-900">Response Time Analysis</h3>
+                <Clock className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600" />
+                <h3 className="font-semibold text-blue-900 text-sm sm:text-base">Response Time Analysis</h3>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 <div>
-                  <p className="text-sm text-gray-600">Response Time</p>
-                  <p className={`font-semibold ${tender.responseTimeInDays !== null ? getResponseTimeStatus(tender.responseTimeInDays).color : 'text-gray-500'}`}>
+                  <p className="text-xs sm:text-sm text-gray-600">Response Time</p>
+                  <p className={`font-semibold text-sm sm:text-base ${tender.responseTimeInDays !== null ? getResponseTimeStatus(tender.responseTimeInDays).color : 'text-gray-500'}`}>
                     {tender.responseTimeInDays !== null ? formatResponseTime(tender.responseTimeInDays) : 'Pending'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Status</p>
-                  <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  <p className="text-xs sm:text-sm text-gray-600">Status</p>
+                  <span className={`inline-flex px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium ${
                     tender.responseTimeInDays !== null 
                       ? getResponseTimeStatus(tender.responseTimeInDays).status === 'Excellent' ? 'bg-green-100 text-green-800' :
                         getResponseTimeStatus(tender.responseTimeInDays).status === 'Good' ? 'bg-blue-100 text-blue-800' :
@@ -783,9 +783,9 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                     {tender.responseTimeInDays !== null ? getResponseTimeStatus(tender.responseTimeInDays).status : 'Pending'}
                   </span>
                 </div>
-                <div>
-                  <p className="text-sm text-gray-600">Days Elapsed</p>
-                  <p className="font-semibold text-gray-900">
+                <div className="sm:col-span-2 lg:col-span-1">
+                  <p className="text-xs sm:text-sm text-gray-600">Days Elapsed</p>
+                  <p className="font-semibold text-gray-900 text-sm sm:text-base break-words">
                     {tender.responseTimeInDays !== null ? `${tender.responseTimeInDays} days` : 
                       tender.dateOfPriceRequestToVendor ? `${Math.ceil((new Date().getTime() - new Date(tender.dateOfPriceRequestToVendor).getTime()) / (1000 * 3600 * 24))} days pending` : 'N/A'}
                   </p>
@@ -795,34 +795,34 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           )}
 
           {/* Financial Information */}
-          <div className={`grid grid-cols-1 md:grid-cols-2 ${user.permissions?.canViewCostFromVendor ? 'lg:grid-cols-4' : 'lg:grid-cols-2'} gap-4`}>
+          <div className={`grid grid-cols-1 sm:grid-cols-2 ${user.permissions?.canViewCostFromVendor ? 'lg:grid-cols-4' : 'lg:grid-cols-2'} gap-3 sm:gap-4`}>
             {user.permissions?.canViewCostFromVendor && (
-              <div className="bg-green-50 rounded-lg p-4">
+              <div className="bg-green-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-green-600" />
-                  <h3 className="font-semibold text-gray-900">Cost from Vendor</h3>
+                  <DollarSign className="h-4 sm:h-5 w-4 sm:w-5 text-green-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Cost from Vendor</h3>
                 </div>
-                <p className="text-lg font-bold text-green-700">{formatCurrency(tender.costFromVendor)}</p>
+                <p className="text-base sm:text-lg font-bold text-green-700 break-words">{formatCurrency(tender.costFromVendor)}</p>
               </div>
             )}
 
             {user.permissions?.canViewSellingPrice && (
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-semibold text-gray-900">Selling Price</h3>
+                  <DollarSign className="h-4 sm:h-5 w-4 sm:w-5 text-blue-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Selling Price</h3>
                 </div>
-                <p className="text-lg font-bold text-blue-700">{formatCurrency(tender.sellingPrice)}</p>
+                <p className="text-base sm:text-lg font-bold text-blue-700 break-words">{formatCurrency(tender.sellingPrice)}</p>
               </div>
             )}
 
             {user.permissions?.canViewProfitMargin && (
-              <div className="bg-purple-50 rounded-lg p-4">
+              <div className="bg-purple-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <TrendingUp className="h-5 w-5 text-purple-600" />
-                  <h3 className="font-semibold text-gray-900">Profit Margin</h3>
+                  <TrendingUp className="h-4 sm:h-5 w-4 sm:w-5 text-purple-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Profit Margin</h3>
                 </div>
-                <p className={`text-lg font-bold ${
+                <p className={`text-base sm:text-lg font-bold break-words ${
                   tender.profitMargin !== null 
                     ? tender.profitMargin > 0 ? 'text-green-700' : 'text-red-700'
                     : 'text-gray-500'
@@ -833,12 +833,12 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
             )}
 
             {user.permissions?.canViewCostFromVendor && user.permissions?.canViewSellingPrice && (
-              <div className="bg-yellow-50 rounded-lg p-4">
+              <div className="bg-yellow-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <DollarSign className="h-5 w-5 text-yellow-600" />
-                  <h3 className="font-semibold text-gray-900">Estimated Profit</h3>
+                  <DollarSign className="h-4 sm:h-5 w-4 sm:w-5 text-yellow-600" />
+                  <h3 className="font-semibold text-gray-900 text-sm sm:text-base">Estimated Profit</h3>
                 </div>
-                <p className="text-lg font-bold text-yellow-700">
+                <p className="text-base sm:text-lg font-bold text-yellow-700 break-words">
                   {tender.costFromVendor && tender.sellingPrice 
                     ? formatCurrency(tender.sellingPrice - tender.costFromVendor)
                     : 'Not calculated'}
@@ -847,7 +847,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
             )}
 
             {(!user.permissions?.canViewCostFromVendor && !user.permissions?.canViewSellingPrice && !user.permissions?.canViewProfitMargin) && (
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
                   <Shield className="h-5 w-5 text-gray-600" />
                   <h3 className="font-semibold text-gray-900">Financial Information</h3>
@@ -860,10 +860,10 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           </div>
 
           {/* Additional Information */}
-          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-900 mb-3">Competitor Information</h3>
-              <p className="text-gray-700">
+          <div className="grid grid-cols-1 gap-3 sm:gap-6">
+            <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+              <h3 className="font-semibold text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Competitor Information</h3>
+              <p className="text-gray-700 text-sm sm:text-base break-words">
                 {tender.competitorWinningPrice || 'No competitor information available'}
               </p>
             </div>
@@ -872,40 +872,40 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
           {/* Items Section */}
           {user.permissions?.canViewTenderItems ? (
             tender.items && tender.items.length > 0 ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                  <Package className="h-5 w-5 mr-2 text-blue-600" />
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+                <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                  <Package className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                   <span>Items</span>
                 </h3>
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part Number</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost from Vendor (JD)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (JD)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit Margin (%)</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Part Number</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost from Vendor (JD)</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Selling Price (JD)</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Profit Margin (%)</th>
+                      <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {tender.items.map((item, index) => (
                       <tr key={item.id || `${tender.id}-item-${index}`}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.description}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.partNumber || 'N/A'}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{item.quantity}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm text-gray-900 break-words">{item.description}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm text-gray-600 break-words">{item.partNumber || 'N/A'}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm text-gray-600">{item.quantity}</td>
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm text-gray-600 break-words">
                           {user.permissions?.canViewCostFromVendor ? (item.costFromVendor ? `${item.costFromVendor.toLocaleString()} JOD` : 'N/A') : 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm text-gray-600 break-words">
                           {user.permissions?.canViewSellingPrice ? (item.sellingPrice ? `${item.sellingPrice.toLocaleString()} JOD` : 'N/A') : 'N/A'}
                         </td>
-                        <td className={`px-6 py-4 whitespace-nowrap text-sm ${user.permissions?.canViewProfitMargin && item.profitMargin < 0 ? 'text-red-600 font-semibold' : 'text-gray-600'}`}>
+                        <td className={`px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm ${user.permissions?.canViewProfitMargin && item.profitMargin < 0 ? 'text-red-600 font-semibold' : 'text-gray-600'} break-words`}>
                           {user.permissions?.canViewProfitMargin ? (item.profitMargin !== undefined ? `${formatPercentage(item.profitMargin)}%` : 'N/A') : 'N/A'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        <td className="px-3 sm:px-6 py-2 sm:py-4 text-xs sm:text-sm font-medium text-gray-900 break-words">
                           {item.totalPrice.toLocaleString()} JOD
                         </td>
                       </tr>
@@ -913,10 +913,10 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                   </tbody>
                   <tfoot className="bg-gray-50">
                     <tr>
-                      <td colSpan={6} className="px-6 py-3 text-right text-sm font-medium text-gray-900">
+                      <td colSpan={6} className="px-3 sm:px-6 py-2 sm:py-3 text-right text-xs sm:text-sm font-medium text-gray-900">
                         Total Items Value:
                       </td>
-                      <td className="px-6 py-3 text-sm font-bold text-gray-900">
+                      <td className="px-3 sm:px-6 py-2 sm:py-3 text-xs sm:text-sm font-bold text-gray-900 break-words">
                         {tender.items.reduce((sum, item) => sum + item.totalPrice, 0).toLocaleString()} JOD
                       </td>
                     </tr>
@@ -926,17 +926,17 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
             </div>
             ) : null
           ) : (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                <Package className="h-5 w-5 mr-2 text-blue-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+              <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                <Package className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                 <span>Items</span>
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
                 <div className="flex items-center space-x-2 mb-2">
-                  <Shield className="h-5 w-5 text-gray-600" />
-                  <h4 className="font-semibold text-gray-900">Items Access Restricted</h4>
+                  <Shield className="h-4 sm:h-5 w-4 sm:w-5 text-gray-600" />
+                  <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Items Access Restricted</h4>
                 </div>
-                <p className="text-sm text-gray-600">
+                <p className="text-xs sm:text-sm text-gray-600">
                   You do not have permission to view tender items.
                 </p>
               </div>
@@ -945,22 +945,22 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
 
           {/* Optional Fields */}
           {(tender.opg || tender.iq) && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+              <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                <FileText className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                 <span>Additional Information</span>
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                 {tender.opg && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">OPG Number</label>
-                    <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-3">{tender.opg}</p>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">OPG Number</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-2 sm:p-3 break-words">{tender.opg}</p>
                   </div>
                 )}
                 {tender.iq && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">IQ Number</label>
-                    <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-3">{tender.iq}</p>
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">IQ Number</label>
+                    <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-2 sm:p-3 break-words">{tender.iq}</p>
                   </div>
                 )}
               </div>
@@ -969,42 +969,42 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
 
           {/* Notes Section */}
           {tender.notes && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                <FileText className="h-5 w-5 mr-2 text-blue-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+              <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                <FileText className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                 <span>Notes</span>
               </h3>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <p className="text-sm text-gray-900 whitespace-pre-wrap">{tender.notes}</p>
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4">
+                <p className="text-sm text-gray-900 whitespace-pre-wrap break-words">{tender.notes}</p>
               </div>
             </div>
           )}
 
           {/* Attachments Section */}
           {tender.attachments && tender.attachments.filter(att => att.type === 'tender_document').length > 0 && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                <Paperclip className="h-5 w-5 mr-2 text-blue-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+              <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                <Paperclip className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                 <span>Tender Documents</span>
               </h3>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {tender.attachments
                   .filter(att => att.type === 'tender_document')
                   .map((attachment, index) => (
-                    <div key={attachment.id || `${tender.id}-attachment-${index}`} className="flex items-center justify-between bg-gray-50 rounded-lg p-4">
-                      <div className="flex items-center space-x-3">
+                    <div key={attachment.id || `${tender.id}-attachment-${index}`} className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-50 rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-0">
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
                         {getFileIcon(attachment.name)}
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{attachment.name}</p>
-                          <p className="text-xs text-gray-500">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-gray-900 truncate">{attachment.name}</p>
+                          <p className="text-xs text-gray-500 break-words">
                             {getFileTypeDescription(attachment.name)} • Uploaded on {formatDate(attachment.uploadedAt)}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div className="flex items-center space-x-2 flex-shrink-0">
                         <button
                           onClick={() => handleViewAttachment(attachment)}
-                          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 border border-transparent hover:border-blue-200"
+                          className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-md transition-all duration-200 border border-transparent hover:border-blue-200"
                           title="View document"
                         >
                           <Eye className="h-4 w-4" />
@@ -1012,7 +1012,7 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
                         </button>
                         <button
                           onClick={() => handleDownloadAttachment(attachment)}
-                          className="flex items-center space-x-1 px-3 py-1.5 text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-all duration-200 border border-transparent hover:border-green-200"
+                          className="flex items-center space-x-1 px-2 sm:px-3 py-1.5 text-xs sm:text-sm text-green-600 hover:text-green-800 hover:bg-green-50 rounded-md transition-all duration-200 border border-transparent hover:border-green-200"
                           title="Download document"
                         >
                           <Download className="h-4 w-4" />
@@ -1027,25 +1027,25 @@ export default function TenderPreview({ tender, user, onClose }: TenderPreviewPr
 
           {/* Bank Guarantee Section */}
           {(tender.bankGuaranteeIssueDate || tender.bankGuaranteeExpiryDate) && (
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="flex items-center text-lg font-semibold text-gray-900 mb-4">
-                <Shield className="h-5 w-5 mr-2 text-blue-600" />
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-3 sm:p-6">
+              <h3 className="flex items-center text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+                <Shield className="h-4 sm:h-5 w-4 sm:w-5 mr-2 text-blue-600" />
                 <span>Bank Guarantee</span>
               </h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
                   {tender.bankGuaranteeIssueDate && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Issue Date</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-3">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Issue Date</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-2 sm:p-3 break-words">
                         {formatDate(tender.bankGuaranteeIssueDate)}
                       </p>
                     </div>
                   )}
                   {tender.bankGuaranteeExpiryDate && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                      <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-3">
+                      <label className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+                      <p className="text-sm text-gray-900 bg-gray-50 rounded-md p-2 sm:p-3 break-words">
                         {formatDate(tender.bankGuaranteeExpiryDate)}
                       </p>
                       {(() => {
