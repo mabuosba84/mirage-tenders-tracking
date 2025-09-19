@@ -1,28 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { readPersistentData, writePersistentData } from '../../../utils/persistentStorage';
+import { getAllAuthoritativeUsers } from '../../../utils/centralAuthority';
 import { User } from '../../../types';
 
 /**
- * BULLETPROOF USER MANAGEMENT API
- * Handles user CRUD operations with persistent storage
+ * SIMPLE USER MANAGEMENT API
+ * Uses central authority as single source of truth
  */
 
 export async function GET(request: NextRequest) {
-  console.log('🔍 GET /api/users - Loading users from persistent storage');
+  console.log('🔍 GET /api/users - Loading users from CENTRAL AUTHORITY');
   
   try {
-    const persistentData = await readPersistentData();
-    const users = persistentData.users || [];
+    // Get users from central authority (single source of truth)
+    const users = getAllAuthoritativeUsers();
     
-    console.log('✅ Loaded users from persistent storage:', users.length);
+    console.log('✅ CENTRAL AUTHORITY: Loaded', users.length, 'users -', users.map(u => u.username).join(', '));
     return NextResponse.json({
       success: true,
       users: users,
-      source: 'persistent-storage',
+      source: 'central-authority',
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('❌ Error loading users:', error);
+    console.error('❌ Error loading users from central authority:', error);
     return NextResponse.json({ 
       success: false,
       error: 'Failed to load users',

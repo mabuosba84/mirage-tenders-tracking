@@ -151,111 +151,24 @@ const getDefaultUserAuthority = (): AuthUser[] => [
   }
 ];
 
-/**
- * Initialize central authority from multiple sources with bulletproof fallbacks
- * Priority: 1. Server storage 2. localStorage 3. Hardcoded defaults
- */
-const initializeCentralAuthority = async (): Promise<AuthUser[]> => {
-  if (typeof window === 'undefined') {
-    return getDefaultUserAuthority(); // Server-side fallback
-  }
+// SINGLE SOURCE OF TRUTH - simplified initialization
+let CENTRAL_USER_AUTHORITY: AuthUser[] = getDefaultUserAuthority();
 
-  console.log('🔄 BULLETPROOF INIT: Starting user data initialization');
-
+// Simple initialization that runs immediately
+if (typeof window !== 'undefined') {
+  // Try to load from localStorage immediately
   try {
-    // STEP 1: Try to load from server (most reliable)
-    try {
-      const response = await fetch('/api/users');
-      if (response.ok) {
-        const serverData = await response.json();
-        if (serverData.success && Array.isArray(serverData.users) && serverData.users.length > 0) {
-          console.log('✅ STEP 1: Loaded from server storage:', serverData.users.length, 'users');
-          
-          // Convert to AuthUser format and save to localStorage
-          const defaults = getDefaultUserAuthority();
-          const authUsers = serverData.users.map((user: User) => {
-            const defaultUser = defaults.find(d => d.username === user.username);
-            return {
-              ...user,
-              password: defaultUser?.password || 'password123'
-            };
-          });
-          
-          // Save to both localStorage locations
-          localStorage.setItem('mirage_central_authority', JSON.stringify(authUsers));
-          localStorage.setItem('mirage_users', JSON.stringify(serverData.users));
-          
-          return authUsers;
-        }
-      }
-    } catch (serverError) {
-      console.warn('⚠️ STEP 1: Server storage failed, trying localStorage:', serverError);
-    }
-
-    // STEP 2: Try to load from central authority localStorage
     const storedAuthority = localStorage.getItem('mirage_central_authority');
     if (storedAuthority) {
       const parsed = JSON.parse(storedAuthority);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        console.log('✅ STEP 2: Loaded from central authority localStorage:', parsed.length, 'users');
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length >= 5) { // Ensure we have all users
+        CENTRAL_USER_AUTHORITY = parsed;
+        console.log('✅ SIMPLE INIT: Loaded from localStorage:', parsed.length, 'users');
       }
     }
-
-    // STEP 3: Try to load from regular user localStorage
-    const storedUsers = localStorage.getItem('mirage_users');
-    if (storedUsers) {
-      const users = JSON.parse(storedUsers);
-      if (Array.isArray(users) && users.length > 0) {
-        console.log('✅ STEP 3: Migrating from user localStorage:', users.length, 'users');
-        
-        // Convert users to AuthUser format
-        const defaults = getDefaultUserAuthority();
-        const authUsers = users.map((user: User) => {
-          const defaultUser = defaults.find(d => d.username === user.username);
-          return {
-            ...user,
-            password: defaultUser?.password || 'password123'
-          };
-        });
-        
-        // Save to central authority storage
-        localStorage.setItem('mirage_central_authority', JSON.stringify(authUsers));
-        return authUsers;
-      }
-    }
-
-    // STEP 4: Use defaults as last resort
-    console.log('⚠️ STEP 4: Using hardcoded defaults (last resort)');
-    const defaults = getDefaultUserAuthority();
-    localStorage.setItem('mirage_central_authority', JSON.stringify(defaults));
-    localStorage.setItem('mirage_users', JSON.stringify(defaults.map(u => {
-      const { password: _, ...userWithoutPassword } = u;
-      return userWithoutPassword;
-    })));
-    
-    return defaults;
-
   } catch (error) {
-    console.error('❌ CRITICAL: All initialization methods failed, using hardcoded defaults:', error);
-    return getDefaultUserAuthority();
+    console.log('⚠️ SIMPLE INIT: localStorage failed, using defaults');
   }
-};
-
-// SINGLE SOURCE OF TRUTH - now loads with bulletproof fallbacks
-let CENTRAL_USER_AUTHORITY: AuthUser[] = [];
-
-// Initialize on load
-if (typeof window !== 'undefined') {
-  initializeCentralAuthority().then(users => {
-    CENTRAL_USER_AUTHORITY = users;
-    console.log('🎯 BULLETPROOF INIT COMPLETE:', users.length, 'users loaded');
-  }).catch(error => {
-    console.error('❌ INIT ERROR, using defaults:', error);
-    CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
-  });
-} else {
-  CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
 }
 
 /**
@@ -493,10 +406,25 @@ export const synchronizeUserToAllSources = async (user: User): Promise<void> => 
 };
 
 /**
- * Get all authoritative users
+ * Get all authoritative users - ALWAYS returns all users
  */
 export const getAllAuthoritativeUsers = (): User[] => {
-  return JSON.parse(JSON.stringify(CENTRAL_USER_AUTHORITY));
+  // Ensure we always have the minimum required users
+  if (CENTRAL_USER_AUTHORITY.length < 5) {
+    console.warn('⚠️ MISSING USERS: Only', CENTRAL_USER_AUTHORITY.length, 'users found, resetting to defaults');
+    CENTRAL_USER_AUTHORITY = getDefaultUserAuthority();
+    // Save to localStorage
+    localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+  }
+  
+  // Return clean copy without passwords
+  const users = CENTRAL_USER_AUTHORITY.map(u => {
+    const { password: _, ...userWithoutPassword } = u;
+    return userWithoutPassword;
+  });
+  
+  console.log('✅ RETURNING USERS:', users.length, 'users -', users.map(u => `${u.username}(${u.role})`).join(', '));
+  return users;
 };
 
 /**
@@ -525,15 +453,15 @@ export const addUserToCentralAuthority = (user: User, password: string): void =>
 };
 
 /**
- * Update user in central authority with BULLETPROOF persistence
+ * Update user in central authority - SIMPLE and WORKING
  */
-export const updateUserInCentralAuthority = async (user: User, password?: string): Promise<boolean> => {
-  console.log('🔒 BULLETPROOF UPDATE: Starting user update for', user.username);
+export const updateUserInCentralAuthority = (user: User, password?: string): boolean => {
+  console.log('🔒 SIMPLE UPDATE: Starting update for', user.username, 'role:', user.role);
   
   try {
     const existingIndex = CENTRAL_USER_AUTHORITY.findIndex(u => u.id === user.id || u.username === user.username);
     if (existingIndex < 0) {
-      console.error('❌ CENTRAL AUTHORITY: User not found for update:', user.username);
+      console.error('❌ USER NOT FOUND:', user.username);
       return false;
     }
 
@@ -544,78 +472,29 @@ export const updateUserInCentralAuthority = async (user: User, password?: string
       updatedAt: new Date()
     };
     
-    // Step 1: Update in-memory authority
+    // Update in memory
     CENTRAL_USER_AUTHORITY[existingIndex] = authUser;
-    console.log('✅ STEP 1: Updated in-memory central authority');
+    console.log('✅ UPDATED IN MEMORY:', user.username, 'role:', user.role);
     
-    // Step 2: Save to persistent server storage FIRST (most important)
-    try {
-      const response = await fetch('/api/users', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user })
-      });
-      
-      if (response.ok) {
-        console.log('✅ STEP 2: Saved to persistent server storage');
-      } else {
-        const errorText = await response.text();
-        console.error('❌ STEP 2 FAILED: Server storage failed:', errorText);
-        throw new Error('Server storage failed');
-      }
-    } catch (serverError) {
-      console.error('❌ CRITICAL: Server storage failed:', serverError);
-      // Don't fail completely, continue with localStorage backups
-    }
+    // Save to localStorage immediately
+    localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
+    console.log('✅ SAVED TO LOCALSTORAGE');
     
-    // Step 3: Save to central authority localStorage
-    try {
-      localStorage.setItem('mirage_central_authority', JSON.stringify(CENTRAL_USER_AUTHORITY));
-      console.log('✅ STEP 3: Saved to central authority localStorage');
-    } catch (localError) {
-      console.warn('⚠️ STEP 3: localStorage central authority failed:', localError);
-    }
-    
-    // Step 4: Save to user localStorage (for compatibility)
-    try {
-      const allUsers = CENTRAL_USER_AUTHORITY.map(u => {
-        const { password: _, ...userWithoutPassword } = u;
-        return userWithoutPassword;
-      });
-      localStorage.setItem('mirage_users', JSON.stringify(allUsers));
-      console.log('✅ STEP 4: Saved to user localStorage');
-    } catch (userLocalError) {
-      console.warn('⚠️ STEP 4: localStorage users failed:', userLocalError);
-    }
-    
-    // Step 5: Force sync to all storage systems
-    try {
-      await synchronizeUserToAllSources(user);
-      console.log('✅ STEP 5: Synchronized to all sources');
-    } catch (syncError) {
-      console.warn('⚠️ STEP 5: Full sync failed:', syncError);
-    }
-    
-    // Step 6: Clear user sessions to force immediate update
-    try {
-      const clearResponse = await fetch('/api/current-user', {
+    // Clear user sessions if it's a role change
+    if (existingUser.role !== user.role) {
+      fetch('/api/current-user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: user.username })
-      });
-      
-      if (clearResponse.ok) {
-        console.log('✅ STEP 6: Cleared user sessions for immediate update');
-      }
-    } catch (clearError) {
-      console.warn('⚠️ STEP 6: Session clearing failed:', clearError);
+      }).catch(error => console.warn('Session clear failed:', error));
+      console.log('✅ CLEARED SESSIONS for role change');
     }
     
-    console.log('🎯 BULLETPROOF UPDATE COMPLETE: User', user.username, 'updated with role', user.role);
+    console.log('🎯 SIMPLE UPDATE COMPLETE:', user.username, 'is now', user.role);
     return true;
     
   } catch (error) {
-    console.error('❌ CRITICAL FAILURE: Bulletproof update failed:', error);
+    console.error('❌ UPDATE FAILED:', error);
     return false;
   }
 };

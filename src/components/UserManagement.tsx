@@ -81,44 +81,24 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
   const [userUpdateSuccess, setUserUpdateSuccess] = useState(false)
   const [passwordResetSuccess, setPasswordResetSuccess] = useState(false)
 
-  // BULLETPROOF user loading from server and central authority
+  // Simple, immediate user loading
   useEffect(() => {
-    const loadUsers = async () => {
-      console.log('🔄 BULLETPROOF LOAD: Starting user load');
-      
-      // Try to reload from server first
-      const serverSuccess = await reloadUsersFromServer();
-      if (serverSuccess) {
-        console.log('✅ BULLETPROOF LOAD: Server reload successful');
-      } else {
-        console.warn('⚠️ BULLETPROOF LOAD: Server reload failed, using local data');
-      }
-      
-      // Load from central authority (now updated from server if successful)
-      const authoritativeUsers = getAllAuthoritativeUsers();
-      console.log('✅ BULLETPROOF LOAD: Loaded', authoritativeUsers.length, 'users');
-      setUsers(authoritativeUsers);
+    const loadUsers = () => {
+      console.log('🔄 SIMPLE LOAD: Getting all users');
+      const allUsers = getAllAuthoritativeUsers();
+      console.log('✅ SIMPLE LOAD: Got', allUsers.length, 'users');
+      setUsers(allUsers);
     };
     
     loadUsers();
   }, [])
 
-  // BULLETPROOF refresh function that forces server sync
-  const refreshUsersFromCentralAuthority = async () => {
-    console.log('🔄 BULLETPROOF REFRESH: Forcing server sync and refresh');
-    
-    // Force reload from server
-    const serverSuccess = await reloadUsersFromServer();
-    if (serverSuccess) {
-      console.log('✅ BULLETPROOF REFRESH: Server sync successful');
-    } else {
-      console.warn('⚠️ BULLETPROOF REFRESH: Server sync failed');
-    }
-    
-    // Refresh from central authority
+  // Simple refresh function
+  const refreshUsersFromCentralAuthority = () => {
+    console.log('🔄 SIMPLE REFRESH: Refreshing user list');
     const freshUsers = getAllAuthoritativeUsers();
     setUsers(freshUsers);
-    console.log('✅ BULLETPROOF REFRESH: Loaded', freshUsers.length, 'users');
+    console.log('✅ SIMPLE REFRESH: Refreshed with', freshUsers.length, 'users');
   };
 
   const resetForm = () => {
@@ -261,99 +241,44 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
     }
   }
 
-  const handleEditUser = async () => {
+  const handleEditUser = () => {
     if (!validateUserForm() || !editingUser) return
 
-    setIsLoading(true)
-    try {
-      // Add UX delay for better user feedback
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    const updatedUser: User = {
+      ...editingUser,
+      username: userForm.username,
+      email: userForm.email,
+      name: userForm.name,
+      role: userForm.role,
+      isActive: userForm.isActive,
+      permissions: userForm.permissions,
+      updatedAt: new Date()
+    }
 
-      const updatedUser: User = {
-        ...editingUser,
-        username: userForm.username,
-        email: userForm.email,
-        name: userForm.name,
-        role: userForm.role,
-        isActive: userForm.isActive,
-        permissions: userForm.permissions,
-        updatedAt: new Date()
-      }
-
-      // BULLETPROOF UPDATE: Use new async update system
-      const updateSuccess = await updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
+    console.log('📝 SIMPLE EDIT: Updating user', updatedUser.username, 'role:', updatedUser.role);
+    
+    // Simple, direct update
+    const success = updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
+    
+    if (success) {
+      console.log('✅ USER UPDATED SUCCESSFULLY');
       
-      if (!updateSuccess) {
-        console.error('❌ USER UPDATE FAILED: Could not save user changes');
-        alert('Failed to save user changes. Please try again.');
-        return;
-      }
-      
-      console.log('✅ BULLETPROOF UPDATE: User successfully updated:', updatedUser.username, 'Role:', updatedUser.role);
-      
-      // Clear user sessions if role changed to ensure immediate role update
-      if (editingUser.role !== updatedUser.role) {
-        try {
-          await fetch('/api/current-user', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: updatedUser.username })
-          });
-          console.log('✅ SESSIONS CLEARED: Role changed, cleared sessions for', updatedUser.username);
-        } catch (error) {
-          console.warn('⚠️ Failed to clear sessions after role change:', error);
-        }
-      }
-      
-      // Log the user update for audit trail
-      try {
-        await logUserChange(
-          currentUser,
-          'UPDATE',
-          updatedUser,
-          editingUser
-        );
-        console.log('✅ User update logged successfully');
-      } catch (logError) {
-        console.error('❌ Failed to log user update:', logError);
-        // Continue even if logging fails
-      }
-      
-      // If the updated user is the current user, update centralized storage
-      if (updatedUser.id === currentUser.id) {
-        await saveCurrentUserToStorage(updatedUser)
-        // Dispatch custom event to notify other components
-        window.dispatchEvent(new Event('userUpdated'))
-      }
-      
-      // Refresh from central authority with bulletproof server sync
-      await refreshUsersFromCentralAuthority();
+      // Simple refresh
+      refreshUsersFromCentralAuthority()
       
       // Show success state for UI feedback
       setUserUpdateSuccess(true);
       
-      // Auto-close the dialog after success (optional)
+      // Auto-close the dialog after success
       setTimeout(() => {
         setEditingUser(null);
         resetForm();
         setUserUpdateSuccess(false);
-      }, 2000); // Show success for 2 seconds then auto-close
+      }, 2000);
       
-      // Trigger automatic sync after editing user
-      if (onAutoSync) {
-        setTimeout(async () => {
-          try {
-            console.log('🔄 Auto-sync triggered after editing user')
-            await onAutoSync()
-          } catch (error) {
-            console.error('❌ Auto-sync failed after editing user:', error)
-          }
-        }, 500)
-      }
-    } catch (error) {
-      console.error('Error updating user:', error)
-    } finally {
-      setIsLoading(false)
+    } else {
+      console.error('❌ USER UPDATE FAILED');
+      alert('Failed to update user. Please try again.');
     }
   }
 

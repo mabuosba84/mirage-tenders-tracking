@@ -4,15 +4,15 @@ import { User } from '@/types'
 // In-memory storage for current user sessions per browser session
 let currentUserStorage: { [sessionId: string]: User } = {}
 
-// Generate unique session ID based on request headers and timestamp
+// Simple, stable session ID based on browser fingerprint only
 function generateSessionId(request: NextRequest): string {
-  const userAgent = request.headers.get('user-agent') || ''
-  const acceptLanguage = request.headers.get('accept-language') || ''
-  const timestamp = Date.now()
-  const random = Math.random().toString(36).substring(2)
+  const userAgent = request.headers.get('user-agent') || 'unknown'
+  const acceptLanguage = request.headers.get('accept-language') || 'unknown'
+  const xForwardedFor = request.headers.get('x-forwarded-for') || 'unknown'
   
-  // Create unique session based on browser fingerprint + timestamp + random
-  return Buffer.from(`${userAgent}-${acceptLanguage}-${timestamp}-${random}`).toString('base64').substring(0, 32)
+  // Create stable session based on browser fingerprint (no timestamp/random)
+  const fingerprint = `${userAgent}-${acceptLanguage}-${xForwardedFor}`
+  return Buffer.from(fingerprint).toString('base64').substring(0, 32)
 }
 
 // Extract session ID from cookies or create new one
@@ -31,13 +31,21 @@ function getSessionId(request: NextRequest): string {
 export async function GET(request: NextRequest) {
   try {
     const sessionId = getSessionId(request)
-    console.log(`🔍 Getting user for session: ${sessionId.substring(0, 8)}...`)
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    console.log(`🔍 GET SESSION: ${sessionId.substring(0, 8)}... for UserAgent: ${userAgent.substring(0, 50)}...`)
+    
+    // Debug: Log all current sessions
+    console.log(`📊 ACTIVE SESSIONS: ${Object.keys(currentUserStorage).length}`)
+    Object.keys(currentUserStorage).forEach(id => {
+      const user = currentUserStorage[id]
+      console.log(`  - ${id.substring(0, 8)}...: ${user.username} (${user.role})`)
+    })
     
     // Return user specific to this browser session
     const user = currentUserStorage[sessionId]
     
     if (user) {
-      console.log(`✅ Found user for session: ${user.username} (${user.role})`)
+      console.log(`✅ FOUND USER: ${user.username} (${user.role}) for session ${sessionId.substring(0, 8)}...`)
       return NextResponse.json({
         success: true,
         user: user,
@@ -45,7 +53,7 @@ export async function GET(request: NextRequest) {
       })
     }
     
-    console.log(`ℹ️ No user found for session: ${sessionId.substring(0, 8)}...`)
+    console.log(`❌ NO USER: for session ${sessionId.substring(0, 8)}...`)
     return NextResponse.json({
       success: false,
       user: null,
@@ -73,10 +81,19 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionId = getSessionId(request)
-    console.log(`💾 Storing user for session: ${sessionId.substring(0, 8)}... - User: ${user.username} (${user.role})`)
+    const userAgent = request.headers.get('user-agent') || 'unknown'
+    console.log(`💾 STORING USER: ${user.username} (${user.role}) for session ${sessionId.substring(0, 8)}...`)
+    console.log(`📱 USER AGENT: ${userAgent.substring(0, 50)}...`)
 
     // Store user with unique browser session ID
     currentUserStorage[sessionId] = user
+
+    // Debug: Log all sessions after storing
+    console.log(`📊 SESSIONS AFTER STORE: ${Object.keys(currentUserStorage).length}`)
+    Object.keys(currentUserStorage).forEach(id => {
+      const sessionUser = currentUserStorage[id]
+      console.log(`  - ${id.substring(0, 8)}...: ${sessionUser.username} (${sessionUser.role})`)
+    })
 
     // Create response with session cookie
     const response = NextResponse.json({
