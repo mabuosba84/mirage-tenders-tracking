@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { User, LoginFormData } from '@/types'
-import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react'
+import { Eye, EyeOff, LogIn } from 'lucide-react'
 import { authenticateUserPermanent } from '@/utils/centralAuthority'
 import { logChange } from '@/utils/changeLogUtils'
+import Image from 'next/image'
 
 interface LoginProps {
   onLogin: (user: User) => void
@@ -71,8 +72,15 @@ export default function Login({ onLogin }: LoginProps) {
         {/* Logo and Header */}
         <div className="text-center mb-8">
           {/* Mirage Logo */}
-          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-            <Building2 className="w-10 h-10 text-white" />
+          <div className="mx-auto w-20 h-20 mb-6 relative">
+            <Image
+              src="/mirage-logo.png"
+              alt="Mirage Business Solutions"
+              width={80}
+              height={80}
+              className="rounded-2xl shadow-lg object-contain"
+              priority
+            />
           </div>
           
           {/* Company Name */}
