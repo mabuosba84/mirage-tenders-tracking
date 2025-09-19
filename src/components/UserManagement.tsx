@@ -258,6 +258,20 @@ export default function UserManagement({ currentUser, onAutoSync }: UserManageme
       updateUserInCentralAuthority(updatedUser, userForm.password || undefined);
       console.log('✅ USER UPDATED: Successfully updated in central authority:', updatedUser.username);
       
+      // Clear user sessions if role changed to ensure immediate role update
+      if (editingUser.role !== updatedUser.role) {
+        try {
+          await fetch('/api/current-user', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: updatedUser.username })
+          });
+          console.log('✅ SESSIONS CLEARED: Role changed, cleared sessions for', updatedUser.username);
+        } catch (error) {
+          console.warn('⚠️ Failed to clear sessions after role change:', error);
+        }
+      }
+      
       // Log the user update for audit trail
       try {
         await logUserChange(
