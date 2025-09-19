@@ -188,10 +188,7 @@ export default function Header({ user, onLogout, activeTab, onTabChange }: Heade
                 }}
               />
             </div>
-            <div>
-              <h1 className="text-xl font-semibold text-gray-900">Mirage Business Solutions</h1>
-              <p className="text-sm text-blue-600 font-medium">Tenders Tracking System</p>
-            </div>
+
           </div>
 
           {/* Navigation */}

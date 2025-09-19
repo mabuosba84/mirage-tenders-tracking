@@ -93,7 +93,7 @@ export default function Login({ onLogin }: LoginProps) {
           
           {/* System Name */}
           <p className="text-blue-600 font-medium text-lg">
-            Tenders Tracking System
+            Offering Tracking System
           </p>
           
           {/* Contact Info */}
