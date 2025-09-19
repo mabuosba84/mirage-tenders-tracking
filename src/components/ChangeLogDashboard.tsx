@@ -82,8 +82,20 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
         if (response.ok) {
           const data = await response.json()
           if (data.logs && Array.isArray(data.logs)) {
-            setLogs(data.logs)
-            console.log('✅ Loaded change logs from server:', data.logs.length)
+            // Ensure all timestamps are valid Date objects
+            const validLogs = data.logs.map((log: any) => ({
+              ...log,
+              timestamp: log.timestamp ? new Date(log.timestamp) : new Date()
+            })).filter((log: any) => {
+              // Filter out logs with invalid timestamps
+              const isValidDate = log.timestamp instanceof Date && !isNaN(log.timestamp.getTime())
+              if (!isValidDate) {
+                console.warn('⚠️ Skipping server log with invalid timestamp:', log)
+              }
+              return isValidDate
+            })
+            setLogs(validLogs)
+            console.log('✅ Loaded change logs from server:', validLogs.length)
             return
           }
         }
@@ -96,8 +108,15 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
       if (storedLogs) {
         const parsedLogs = JSON.parse(storedLogs).map((log: any) => ({
           ...log,
-          timestamp: new Date(log.timestamp)
-        }))
+          timestamp: log.timestamp ? new Date(log.timestamp) : new Date()
+        })).filter((log: any) => {
+          // Filter out logs with invalid timestamps
+          const isValidDate = log.timestamp instanceof Date && !isNaN(log.timestamp.getTime())
+          if (!isValidDate) {
+            console.warn('⚠️ Skipping log with invalid timestamp:', log)
+          }
+          return isValidDate
+        })
         setLogs(parsedLogs)
         console.log('✅ Loaded change logs from localStorage:', parsedLogs.length)
       } else {
@@ -223,15 +242,33 @@ export default function ChangeLogDashboard({ currentUser }: ChangeLogDashboardPr
     }
   }
 
-  const formatTimestamp = (timestamp: Date) => {
-    return new Intl.DateTimeFormat('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    }).format(timestamp)
+  const formatTimestamp = (timestamp: Date | string | null | undefined) => {
+    try {
+      // Handle null/undefined values
+      if (!timestamp) {
+        return 'Invalid Date'
+      }
+      
+      // Convert to Date object if it's a string
+      const date = timestamp instanceof Date ? timestamp : new Date(timestamp)
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date'
+      }
+      
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).format(date)
+    } catch (error) {
+      console.error('Error formatting timestamp:', timestamp, error)
+      return 'Invalid Date'
+    }
   }
 
   const getAllUsers = () => {
