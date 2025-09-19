@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     // Also check if there are any backup files
     const dataDir = path.join(process.cwd(), 'data');
-    let backupFiles = [];
+    let backupFiles: string[] = [];
     
     try {
       const files = await fs.readdir(dataDir);
