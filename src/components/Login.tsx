@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { User, LoginFormData } from '@/types'
-import { Eye, EyeOff, LogIn } from 'lucide-react'
+import { Eye, EyeOff, LogIn, Building2 } from 'lucide-react'
 import { authenticateUserPermanent } from '@/utils/centralAuthority'
 import { logChange } from '@/utils/changeLogUtils'
 
@@ -25,25 +25,11 @@ export default function Login({ onLogin }: LoginProps) {
     setError('')
 
     try {
-      console.log('🔒 PERMANENT AUTH: Starting authentication for', formData.username);
-      
       // Use the permanent authentication system
       const authResult = await authenticateUserPermanent(formData.username, formData.password);
       
       if (authResult.success && authResult.user) {
         const user = authResult.user;
-        
-        console.log('✅ PERMANENT AUTH SUCCESS:', {
-          username: user.username,
-          role: user.role,
-          source: authResult.source,
-          hasWarnings: (authResult.errors?.length || 0) > 0
-        });
-
-        // Show warning if there were consistency issues that were auto-fixed
-        if (authResult.errors && authResult.errors.length > 0) {
-          console.warn('⚠️ Authentication warnings (auto-fixed):', authResult.errors);
-        }
         
         // Log the login for audit trail
         try {
@@ -51,20 +37,16 @@ export default function Login({ onLogin }: LoginProps) {
             entityId: user.id,
             entityName: user.username
           });
-          console.log('✅ Login logged successfully');
         } catch (logError) {
-          console.error('❌ Failed to log login:', logError);
-          // Continue with login even if logging fails
+          console.error('Failed to log login:', logError);
         }
         
         onLogin(user);
       } else {
         const errorMessage = authResult.errors?.[0] || 'Invalid username or password';
         setError(errorMessage);
-        console.error('❌ PERMANENT AUTH FAILED:', errorMessage);
       }
     } catch (error) {
-      console.error('❌ Authentication error:', error);
       setError('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
@@ -80,47 +62,74 @@ export default function Login({ onLogin }: LoginProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-xl p-8 w-full max-w-md">
-        {/* Company Header */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-4">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+      
+      {/* Main Container */}
+      <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20 p-8 w-full max-w-md">
+        {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <LogIn className="w-8 h-8 text-white" />
+          {/* Mirage Logo */}
+          <div className="mx-auto w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+            <Building2 className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Mirage Business Solutions
+          
+          {/* Company Name */}
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+            Mirage
           </h1>
-          <p className="text-gray-600">
-            Tenders Tracking System
+          <h2 className="text-xl font-semibold text-gray-700 mb-1">
+            Business Solutions
+          </h2>
+          
+          {/* System Name */}
+          <p className="text-blue-600 font-medium text-lg">
+            Offering System
           </p>
-          <div className="mt-2 text-sm text-gray-500">
-            <div>📞 +962 6 569 13 33 | +962 78693 5565</div>
-            <div>📧 m.abuosba@miragebs.com</div>
-            <div>🌐 www.miragebs.com</div>
+          
+          {/* Contact Info */}
+          <div className="mt-4 text-sm text-gray-500 space-y-1">
+            <div className="flex items-center justify-center space-x-2">
+              <span>📞</span>
+              <span>+962 6 569 13 33</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <span>📧</span>
+              <span>m.abuosba@miragebs.com</span>
+            </div>
+            <div className="flex items-center justify-center space-x-2">
+              <span>🌐</span>
+              <span>www.miragebs.com</span>
+            </div>
           </div>
         </div>
 
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+          {/* Username Field */}
+          <div className="space-y-2">
+            <label htmlFor="username" className="block text-sm font-semibold text-gray-700">
               Username
             </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter your username"
-              required
-              disabled={isLoading}
-            />
+            <div className="relative">
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200 placeholder-gray-400"
+                placeholder="Enter your username"
+                required
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+          {/* Password Field */}
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-semibold text-gray-700">
               Password
             </label>
             <div className="relative">
@@ -130,7 +139,7 @@ export default function Login({ onLogin }: LoginProps) {
                 name="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 bg-gray-50/50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200 placeholder-gray-400"
                 placeholder="Enter your password"
                 required
                 disabled={isLoading}
@@ -138,7 +147,7 @@ export default function Login({ onLogin }: LoginProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
                 disabled={isLoading}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -146,21 +155,23 @@ export default function Login({ onLogin }: LoginProps) {
             </div>
           </div>
 
+          {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
               {error}
             </div>
           )}
 
+          {/* Submit Button */}
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-4 rounded-xl hover:from-blue-700 hover:to-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Authenticating...
+                Signing In...
               </div>
             ) : (
               <div className="flex items-center justify-center">
@@ -171,21 +182,11 @@ export default function Login({ onLogin }: LoginProps) {
           </button>
         </form>
 
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials:</h3>
-          <div className="space-y-1 text-sm text-gray-600">
-            <div><strong>Admin:</strong> admin / admin123</div>
-            <div><strong>User:</strong> user / user123</div>
-            <div><strong>Basil (Admin):</strong> Basil / password123</div>
-            <div><strong>Dina (Admin):</strong> Dina / password123</div>
+        {/* Footer */}
+        <div className="mt-8 text-center">
+          <div className="text-xs text-gray-400">
+            © 2025 Mirage Business Solutions. All rights reserved.
           </div>
-        </div>
-
-        {/* System Info */}
-        <div className="mt-6 text-center text-xs text-gray-400">
-          <div>🔒 Powered by Centralized Authentication Authority</div>
-          <div>🔄 Auto-sync & Role Consistency Protection</div>
         </div>
       </div>
     </div>
