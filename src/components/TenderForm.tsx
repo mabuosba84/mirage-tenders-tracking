@@ -549,6 +549,9 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
               <div>
                 <label htmlFor="requestDate" className="block text-sm font-medium text-gray-700 mb-2">
                   Request Date
+                  {tender && user.role !== 'admin' && (
+                    <span className="text-xs text-orange-600 ml-2">(Admin only after submission)</span>
+                  )}
                 </label>
                 <input
                   type="date"
@@ -556,9 +559,17 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                   name="requestDate"
                   value={formData.requestDate}
                   onChange={handleInputChange}
+                  disabled={!!(tender && user.role !== 'admin')} // Disable for non-admins when editing
                   placeholder=""
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                    tender && user.role !== 'admin' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                  }`}
                 />
+                {tender && user.role !== 'admin' && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    🔒 This date can only be modified by administrators after tender submission
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -586,6 +597,9 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
             <div>
               <label htmlFor="dateOfPriceRequestToVendor" className="block text-sm font-medium text-gray-700 mb-2">
                 Date of Price Request to Vendor
+                {tender && user.role !== 'admin' && (
+                  <span className="text-xs text-orange-600 ml-2">(Admin only after submission)</span>
+                )}
               </label>
               <input
                 type="date"
@@ -593,14 +607,25 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 name="dateOfPriceRequestToVendor"
                 value={formData.dateOfPriceRequestToVendor}
                 onChange={handleInputChange}
+                disabled={!!(tender && user.role !== 'admin')} // Disable for non-admins when editing
                 placeholder=""
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  tender && user.role !== 'admin' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                }`}
               />
+              {tender && user.role !== 'admin' && (
+                <p className="text-xs text-orange-600 mt-1">
+                  🔒 This date can only be modified by administrators after tender submission
+                </p>
+              )}
             </div>
 
             <div>
               <label htmlFor="dateOfPriceReceivedFromVendor" className="block text-sm font-medium text-gray-700 mb-2">
                 Date of Price Received from Vendor
+                {tender && user.role !== 'admin' && (
+                  <span className="text-xs text-orange-600 ml-2">(Admin only after submission)</span>
+                )}
               </label>
               <input
                 type="date"
@@ -608,9 +633,17 @@ export default function TenderForm({ user, tender, onSubmit, onCancel }: TenderF
                 name="dateOfPriceReceivedFromVendor"
                 value={formData.dateOfPriceReceivedFromVendor}
                 onChange={handleInputChange}
+                disabled={!!(tender && user.role !== 'admin')} // Disable for non-admins when editing
                 placeholder=""
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
+                  tender && user.role !== 'admin' ? 'bg-gray-100 cursor-not-allowed text-gray-500' : ''
+                }`}
               />
+              {tender && user.role !== 'admin' && (
+                <p className="text-xs text-orange-600 mt-1">
+                  🔒 This date can only be modified by administrators after tender submission
+                </p>
+              )}
             </div>
           </div>
           </div>

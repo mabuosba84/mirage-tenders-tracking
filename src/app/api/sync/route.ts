@@ -47,6 +47,61 @@ export async function POST(request: NextRequest) {
     // Read current persistent data
     const currentData = await readPersistentData();
 
+    // CRITICAL BUSINESS RULE: Validate date field permissions
+    if (tenders && Array.isArray(tenders)) {
+      const currentTenders = currentData.tenders || [];
+      
+      // Check each tender for unauthorized date modifications
+      for (let i = 0; i < tenders.length; i++) {
+        const newTender = tenders[i];
+        const existingTender = currentTenders.find(t => t.id === newTender.id);
+        
+        // If this is an existing tender (edit operation)
+        if (existingTender) {
+          // Check if user is not admin and dates have been modified
+          const userRole = clientUser?.role || 'user';
+          
+          if (userRole !== 'admin') {
+            // Protect critical date fields from non-admin modifications
+            const protectedFields = [
+              'requestDate',
+              'dateOfPriceRequestToVendor', 
+              'dateOfPriceReceivedFromVendor'
+            ];
+            
+            let hasUnauthorizedChanges = false;
+            const changedFields = [];
+            
+            for (const field of protectedFields) {
+              const existingValue = existingTender[field];
+              const newValue = newTender[field];
+              
+              // Compare dates (handle null/undefined cases)
+              const existingDate = existingValue ? new Date(existingValue).getTime() : null;
+              const newDate = newValue ? new Date(newValue).getTime() : null;
+              
+              if (existingDate !== newDate) {
+                hasUnauthorizedChanges = true;
+                changedFields.push(field);
+              }
+            }
+            
+            if (hasUnauthorizedChanges) {
+              console.warn(`🚫 SECURITY: Non-admin user attempted to modify protected date fields:`, changedFields);
+              console.warn(`User: ${clientUser?.username || 'unknown'}, Role: ${userRole}`);
+              
+              return NextResponse.json({ 
+                success: false,
+                error: 'Access Denied: Only administrators can modify Request Date, Date of Price Request to Vendor, and Date of Price Received from Vendor after tender submission.',
+                protectedFields: changedFields,
+                userRole: userRole
+              }, { status: 403 });
+            }
+          }
+        }
+      }
+    }
+
     // Prepare data to save
     const dataToSave = {
       tenders: tenders || currentData.tenders,
