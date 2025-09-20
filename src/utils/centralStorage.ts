@@ -283,11 +283,15 @@ export const loadUsersFromStorage = async (): Promise<User[]> => {
 }
 
 // Auto-sync function to run periodically
-export const syncDataAcrossDomains = async (): Promise<void> => {
+/**
+ * Force network synchronization for cross-domain consistency
+ * Railway production version - NO localStorage
+ */
+export const forceNetworkSync = async (): Promise<void> => {
   try {
-    console.log('=== SYNC STARTED ===')
+    console.log('=== NETWORK SYNC STARTED (Railway) ===')
     
-    // Load data from central storage first
+    // Load data from IndexedDB only
     const [centralTenders, centralUsers] = await Promise.all([
       centralStorage.loadTenders(),
       centralStorage.loadUsers()
@@ -295,171 +299,51 @@ export const syncDataAcrossDomains = async (): Promise<void> => {
     
     console.log('Central storage has:', centralTenders.length, 'tenders and', centralUsers.length, 'users')
     
-    // Load data from localStorage
-    const localTendersString = localStorage.getItem('mirage_tenders')
-    const localUsersString = localStorage.getItem('mirage_users')
-    
-    const localTenders = localTendersString ? JSON.parse(localTendersString) : []
-    const localUsers = localUsersString ? JSON.parse(localUsersString) : []
-    
-    console.log('Local storage has:', localTenders.length, 'tenders and', localUsers.length, 'users')
-    
-    // For tenders: if IndexedDB has data, use it; otherwise save local to IndexedDB
-    if (centralTenders.length > 0) {
-      // IndexedDB has data, update localStorage
-      localStorage.setItem('mirage_tenders', JSON.stringify(centralTenders))
-      console.log('Updated localStorage with', centralTenders.length, 'tenders from IndexedDB')
-    } else if (localTenders.length > 0) {
-      // localStorage has data but IndexedDB doesn't, save to IndexedDB
-      await centralStorage.saveTenders(localTenders)
-      console.log('Saved', localTenders.length, 'tenders from localStorage to IndexedDB')
+    // Broadcast data to other domains/tabs via network
+    if (typeof window !== 'undefined' && window.postMessage) {
+      window.postMessage({
+        type: 'RAILWAY_SYNC',
+        tenders: centralTenders,
+        users: centralUsers,
+        timestamp: Date.now()
+      }, '*')
     }
     
-    // For users: same logic
-    if (centralUsers.length > 0) {
-      localStorage.setItem('mirage_users', JSON.stringify(centralUsers))
-      console.log('Updated localStorage with', centralUsers.length, 'users from IndexedDB')
-    } else if (localUsers.length > 0) {
-      await centralStorage.saveUsers(localUsers)
-      console.log('Saved', localUsers.length, 'users from localStorage to IndexedDB')
-    }
-
-    // Force network synchronization for cross-domain consistency
-    await forceNetworkSync()
-    
-    console.log('=== SYNC COMPLETED ===')
+    console.log('=== NETWORK SYNC COMPLETED ===')
   } catch (error) {
-    console.error('Error syncing data:', error)
+    console.error('Error in network sync:', error)
   }
 }
 
-// Initialize sync on page load
+// Initialize central storage for Railway production
 export const initializeCentralStorage = async (): Promise<void> => {
   try {
+    console.log('=== INITIALIZING CENTRAL STORAGE (Railway Production) ===')
+    
+    // Initialize IndexedDB directly - NO localStorage migration
     await centralStorage.initDB()
     
-    // First, migrate existing localStorage data to central storage
-    await migrateLocalStorageToIndexedDB()
-    
-    // Then sync data across domains
-    await syncDataAcrossDomains()
+    // Force network synchronization for cross-domain consistency  
+    await forceNetworkSync()
     
     // Set up periodic sync (every 30 seconds)
-    setInterval(syncDataAcrossDomains, 30000)
+    setInterval(forceNetworkSync, 30000)
+    
+    console.log('=== INITIALIZATION COMPLETED ===')
   } catch (error) {
     console.error('Error initializing central storage:', error)
   }
 }
 
-// Migrate existing localStorage data to central IndexedDB storage
-const migrateLocalStorageToIndexedDB = async (): Promise<void> => {
-  try {
-    console.log('=== MIGRATION STARTED ===')
-    
-    // Migrate tenders if they exist in localStorage but not in central storage
-    const localTenders = localStorage.getItem('mirage_tenders')
-    if (localTenders) {
-      const tendersArray = JSON.parse(localTenders)
-      console.log('Found', tendersArray.length, 'tenders in localStorage')
-      
-      if (tendersArray.length > 0) {
-        // Always migrate to ensure data is in IndexedDB
-        console.log('Migrating', tendersArray.length, 'tenders from localStorage to IndexedDB')
-        await centralStorage.saveTenders(tendersArray)
-        console.log('Migration completed successfully')
-      }
-    } else {
-      console.log('No tenders found in localStorage to migrate')
-    }
-    
-    // Migrate users if they exist in localStorage but not in central storage
-    const localUsers = localStorage.getItem('mirage_users')
-    if (localUsers) {
-      const usersArray = JSON.parse(localUsers)
-      console.log('Found', usersArray.length, 'users in localStorage')
-      
-      if (usersArray.length > 0) {
-        console.log('Migrating', usersArray.length, 'users from localStorage to IndexedDB')
-        await centralStorage.saveUsers(usersArray)
-      }
-    }
-    
-    // Force network synchronization to ensure consistency
-    await forceNetworkSync()
-    
-    console.log('=== MIGRATION COMPLETED ===')
-  } catch (error) {
-    console.error('Error migrating localStorage to IndexedDB:', error)
-  }
-}
 
-// Force network synchronization for cross-domain consistency
-async function forceNetworkSync(): Promise<void> {
-  if (typeof window === 'undefined') return
 
-  try {
-    console.log('🔄 Force syncing with server for cross-domain consistency...')
-    
-    // Get the current hostname to determine sync endpoint
-    const isNetworkAccess = window.location.hostname === '172.18.0.1'
-    const baseUrl = isNetworkAccess ? 'http://172.18.0.1:3001' : 'http://localhost:3001'
-    
-    // First, get server data
-    const serverResponse = await fetch(`${baseUrl}/api/sync`, {
-      method: 'GET',
-      headers: { 'Content-Type': 'application/json' }
-    })
-    
-    if (serverResponse.ok) {
-      const serverData = await serverResponse.json()
-      console.log('📥 Retrieved server data:', serverData.data.tenders.length, 'tenders')
-      
-      // Update local storage with server data
-      if (serverData.data.tenders.length > 0) {
-        localStorage.setItem('mirage_tenders', JSON.stringify(serverData.data.tenders))
-        await centralStorage.saveTenders(serverData.data.tenders)
-        console.log('✅ Local storage updated with server data')
-      }
-      
-      if (serverData.data.users.length > 0) {
-        localStorage.setItem('mirage_users', JSON.stringify(serverData.data.users))
-        await centralStorage.saveUsers(serverData.data.users)
-        console.log('✅ Users updated with server data')
-      }
-    }
-    
-    // Then push any local data to server
-    const localTenders = await centralStorage.loadTenders()
-    const localUsers = await centralStorage.loadUsers()
-    
-    if (localTenders.length > 0 || localUsers.length > 0) {
-      const syncResponse = await fetch(`${baseUrl}/api/sync`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenders: localTenders,
-          users: localUsers,
-          source: isNetworkAccess ? 'network' : 'localhost'
-        })
-      })
-      
-      if (syncResponse.ok) {
-        console.log('📤 Local data synced to server successfully')
-      }
-    }
-    
-    console.log('🔄 Force sync completed')
-  } catch (error) {
-    console.error('❌ Force sync error:', error)
-  }
-}
 
 /**
  * Save current user to centralized storage with proper session management
  */
 export const saveCurrentUserToStorage = async (user: User): Promise<void> => {
   try {
-    // Save to server API with proper session handling
+    // Save to server API with proper session handling - NO localStorage
     const response = await fetch('/api/current-user', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -473,15 +357,9 @@ export const saveCurrentUserToStorage = async (user: User): Promise<void> => {
     } else {
       throw new Error('Server response not OK')
     }
-    
-    // Also save to localStorage for immediate access (session-specific)
-    localStorage.setItem('currentUser', JSON.stringify(user))
-    console.log('✅ Current user saved to localStorage:', user.username)
   } catch (error) {
     console.error('❌ Failed to save current user to central storage:', error)
-    // Fallback to localStorage only
-    localStorage.setItem('currentUser', JSON.stringify(user))
-    console.log('⚠️ Fallback: Using localStorage only for user:', user.username)
+    throw error // No localStorage fallback
   }
 }
 
@@ -490,7 +368,7 @@ export const saveCurrentUserToStorage = async (user: User): Promise<void> => {
  */
 export const loadCurrentUserFromStorage = async (): Promise<User | null> => {
   try {
-    // Try to load from server with session credentials first
+    // Load from server with session credentials ONLY - NO localStorage
     const response = await fetch('/api/current-user', {
       credentials: 'include' // Include cookies for session management
     })
@@ -499,30 +377,16 @@ export const loadCurrentUserFromStorage = async (): Promise<User | null> => {
       const data = await response.json()
       if (data.success && data.user) {
         console.log('✅ Current user loaded from server session:', data.user.username, `(${data.sessionId?.substring(0, 8)}...)`)
-        // Update localStorage with fresh session data
-        localStorage.setItem('currentUser', JSON.stringify(data.user))
         return data.user
       } else {
         console.log('ℹ️ No user session found on server')
       }
     }
   } catch (error) {
-    console.warn('⚠️ Failed to load user from server session, using localStorage:', error)
+    console.warn('⚠️ Failed to load user from server session:', error)
   }
   
-  // Fallback to localStorage
-  try {
-    const savedUser = localStorage.getItem('currentUser')
-    if (savedUser) {
-      const user = JSON.parse(savedUser)
-      console.log('✅ Current user loaded from localStorage:', user.username)
-      return user
-    }
-  } catch (error) {
-    console.error('❌ Failed to parse current user from localStorage:', error)
-  }
-  
-  console.log('ℹ️ No current user found in any storage')
+  console.log('ℹ️ No current user found in server session')
   return null
 }
 
@@ -531,7 +395,7 @@ export const loadCurrentUserFromStorage = async (): Promise<User | null> => {
  */
 export const removeCurrentUserFromStorage = async (): Promise<void> => {
   try {
-    // Remove from server session
+    // Remove from server session ONLY - NO localStorage
     const response = await fetch('/api/current-user', {
       method: 'DELETE',
       credentials: 'include' // Include cookies for session management
@@ -542,15 +406,8 @@ export const removeCurrentUserFromStorage = async (): Promise<void> => {
     } else {
       console.warn('⚠️ Failed to remove user session from server')
     }
-    
-    // Remove from localStorage
-    localStorage.removeItem('currentUser')
-    console.log('✅ Current user removed from localStorage')
   } catch (error) {
     console.error('❌ Failed to remove current user from central storage:', error)
-    // Still remove from localStorage
-    localStorage.removeItem('currentUser')
-    console.log('⚠️ Fallback: Removed user from localStorage only')
   }
 }
 
@@ -559,7 +416,7 @@ export const removeCurrentUserFromStorage = async (): Promise<void> => {
  */
 export const saveCompanyLogoToStorage = async (logoData: string): Promise<void> => {
   try {
-    // Save to server
+    // Save to server ONLY - NO localStorage
     await fetch('/api/company-logo', {
       method: 'POST',
       headers: {
@@ -568,13 +425,10 @@ export const saveCompanyLogoToStorage = async (logoData: string): Promise<void> 
       body: JSON.stringify({ logo: logoData })
     })
     
-    // Save to localStorage as fallback
-    localStorage.setItem('companyLogo', logoData)
-    console.log('✅ Company logo saved to centralized storage')
+    console.log('✅ Company logo saved to server')
   } catch (error) {
-    console.error('❌ Failed to save logo to central storage:', error)
-    // Fallback to localStorage only
-    localStorage.setItem('companyLogo', logoData)
+    console.error('❌ Failed to save logo to server:', error)
+    throw error
   }
 }
 
@@ -583,13 +437,11 @@ export const saveCompanyLogoToStorage = async (logoData: string): Promise<void> 
  */
 export const loadCompanyLogoFromStorage = async (): Promise<string | null> => {
   try {
-    // Try to get from server first
+    // Get from server ONLY - NO localStorage
     const response = await fetch('/api/company-logo')
     if (response.ok) {
       const data = await response.json()
       if (data.logo) {
-        // Sync to localStorage
-        localStorage.setItem('companyLogo', data.logo)
         return data.logo
       }
     }
@@ -597,9 +449,7 @@ export const loadCompanyLogoFromStorage = async (): Promise<string | null> => {
     console.error('❌ Failed to load logo from server:', error)
   }
   
-  // Fallback to localStorage
-  const localLogo = localStorage.getItem('companyLogo')
-  return localLogo
+  return null
 }
 
 /**
@@ -607,17 +457,14 @@ export const loadCompanyLogoFromStorage = async (): Promise<string | null> => {
  */
 export const removeCompanyLogoFromStorage = async (): Promise<void> => {
   try {
-    // Remove from server
+    // Remove from server ONLY - NO localStorage
     await fetch('/api/company-logo', {
       method: 'DELETE'
     })
     
-    // Remove from localStorage
-    localStorage.removeItem('companyLogo')
-    console.log('✅ Company logo removed from centralized storage')
+    console.log('✅ Company logo removed from server')
   } catch (error) {
-    console.error('❌ Failed to remove logo from central storage:', error)
-    // Fallback to localStorage only
-    localStorage.removeItem('companyLogo')
+    console.error('❌ Failed to remove logo from server:', error)
+    throw error
   }
 }
