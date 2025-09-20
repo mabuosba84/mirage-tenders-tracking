@@ -15,17 +15,32 @@ export async function GET(request: NextRequest) {
         main: {
           path: uploadsDir,
           exists: fs.existsSync(uploadsDir),
-          files: []
+          files: [] as Array<{
+            name: string;
+            size: number;
+            isFile: boolean;
+            modified: Date;
+          }>
         },
         alt1: {
           path: altDir1,
           exists: fs.existsSync(altDir1),
-          files: []
+          files: [] as Array<{
+            name: string;
+            size: number;
+            isFile: boolean;
+            modified: Date;
+          }>
         },
         alt2: {
           path: altDir2,
           exists: fs.existsSync(altDir2),
-          files: []
+          files: [] as Array<{
+            name: string;
+            size: number;
+            isFile: boolean;
+            modified: Date;
+          }>
         }
       },
       environment: {
