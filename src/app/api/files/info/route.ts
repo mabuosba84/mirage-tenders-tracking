@@ -4,7 +4,7 @@ import path from 'path'
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('🔍 File debug endpoint called')
+    console.log('🔍 File info endpoint called')
     
     const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
     const altDir1 = path.join(process.cwd(), 'uploads');
@@ -92,14 +92,14 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    console.log('📂 Debug result:', JSON.stringify(result, null, 2));
+    console.log('📂 Info result:', JSON.stringify(result, null, 2));
     
     return NextResponse.json(result);
     
   } catch (error) {
-    console.error('❌ Debug endpoint error:', error);
+    console.error('❌ Info endpoint error:', error);
     return NextResponse.json({ 
-      error: 'Debug failed', 
+      error: 'Info failed', 
       message: error instanceof Error ? error.message : 'Unknown error' 
     }, { status: 500 });
   }
