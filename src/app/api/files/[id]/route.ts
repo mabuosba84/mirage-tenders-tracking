@@ -25,10 +25,24 @@ export async function GET(
       
       if (fs.existsSync(altPath1)) {
         console.log('Found file in alternative location:', altPath1);
-        return serveFile(altPath1, fileId);
+        const fileBuffer = fs.readFileSync(altPath1);
+        return new NextResponse(fileBuffer, {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `inline; filename="${fileId}"`,
+            'Cache-Control': 'public, max-age=86400'
+          }
+        });
       } else if (fs.existsSync(altPath2)) {
         console.log('Found file in alternative location:', altPath2);
-        return serveFile(altPath2, fileId);
+        const fileBuffer = fs.readFileSync(altPath2);
+        return new NextResponse(fileBuffer, {
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `inline; filename="${fileId}"`,
+            'Cache-Control': 'public, max-age=86400'
+          }
+        });
       }
       
       return new NextResponse('File not found', { status: 404 });
